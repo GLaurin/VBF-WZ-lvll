@@ -93,7 +93,7 @@ int main() {
         data->SetLineColor(99);
         data->Draw("pSignal >> pSig_f","WeightNormalized*(M_jj>500)*(Deta_jj>3.5)","HIST");
         TH1F *hist_f = (TH1F*)gDirectory->Get("pSig_f");
-        hist_f->SetTitle("pSignal - conditionned");
+        hist_f->SetTitle("pSignal - cut-based");
         gPad->SetLogy();
 
         // Reading the background files
@@ -216,7 +216,7 @@ int main() {
         sig_integral_f->SetName("sig_integral_f");
         sig_integral_f->SetLineWidth(2);
         sig_integral_f->SetLineColor(99);
-        sig_integral_f->SetTitle("Integrals - conditionned; Cut value");
+        sig_integral_f->SetTitle("Integrals - cut-based; Cut value");
         sig_integral_f->Draw();
 
         TGraph* b1_integral_f = new TGraph(20, cut_value, bckgd1_integral_f);
@@ -250,8 +250,8 @@ int main() {
         significance_f->Draw("SAME");
 
         auto legend2 = new TLegend(0.12,0.12,0.42,0.27);
-        legend2->AddEntry("significance", "Cut value dependant" ,"lep");
-        legend2->AddEntry("significance_f", "Conditionned" ,"lep");
+        legend2->AddEntry("significance", "NN" ,"lep");
+        legend2->AddEntry("significance_f", "cut-based" ,"lep");
         legend2->Draw();
 
         // Saving the figure as .png and .root
