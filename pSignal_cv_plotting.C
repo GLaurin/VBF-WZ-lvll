@@ -17,6 +17,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <math.h>
 using namespace std;
 
 //------------------------------------------------------------------------------
@@ -25,9 +26,20 @@ Analysis of the pSignal of different masses and backgrounds following the
 training of the neuron network at each masses seperatly. 
 
 The pSignal and the normalized number of events after certain 
-cut values are plotted. 
+cut values are plotted. Are also plotted, the same curves for the same data 
+but with the conditions of M_jj > 500 and Deta_jj > 3.5. The significance for
+each of these are also drawn.
 */
 //------------------------------------------------------------------------------
+
+float AMS(int s,int b) {
+    float br     = 0.00001;
+    float sigma = pow((b+br),0.5);
+    float n     = s+b+br;
+    float radic = 2*(n*log(n*(b+br+sigma)/(pow(b,2)+n*sigma+br))-pow(b,2)/sigma*log(1+sigma*(n-b)/(b*(b+br+sigma))));
+    float sig   = pow(radic,0.5);
+    return sig;
+}
 
 int main() {
 
@@ -50,14 +62,15 @@ int main() {
     }
     
     // Looping on all masses
-    for (int i=0; i<9; i++) {
+    for (int i=0; i<8; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE
         
         // Creating the path for the data file
         string fdir  = rootdir + "m" + to_string(mass);
         string fname = "new_" + model + "_mainMVA.3050" + to_string(mass_num) + "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_" + to_string(mass) + "_qcd0_ntuples.root";
         string fpath = fdir + "/" + fname;
         char const *fpath_c = fpath.c_str();
-
+        
+        cout << "  PLOTTING FOR MASS : " << mass << endl;
         cout << "Reading signal file : " << fpath_c << endl;
         
         // Reading the signal file
@@ -66,8 +79,8 @@ int main() {
         sfile->GetObject("nominal", data);
         
         // Drawing the data
-        TCanvas *c1 = new TCanvas("c1","c2",800,600);
-        c1->Divide(2,2);
+        TCanvas *c1 = new TCanvas("c1","c2",1000,600);
+        c1->Divide(3,2);
         c1->cd(1);
         data->SetLineColor(99);
         data->Draw("pSignal >> pSig","WeightNormalized","HIST");
@@ -76,11 +89,11 @@ int main() {
         gPad->SetLogy();
 
        // Applying condtions to signal
-        c1->cd(3);
+        c1->cd(4);
         data->SetLineColor(99);
         data->Draw("pSignal >> pSig_f","WeightNormalized*(M_jj>500)*(Deta_jj>3.5)","HIST");
         TH1F *hist_f = (TH1F*)gDirectory->Get("pSig_f");
-        hist_f->SetTitle("M_jj>500 GeV and Deta>3.5");
+        hist_f->SetTitle("pSignal - conditionned");
         gPad->SetLogy();
 
         // Reading the background files
@@ -115,7 +128,7 @@ int main() {
         TH1F *hist_b2 = (TH1F*)gDirectory->Get("pSig_b2");
 
         // Applying conditions to background
-        c1->cd(3);
+        c1->cd(4);
         b1->SetLineColor(77);
         b2->SetLineColor(4);
         b1->Draw("pSignal >> pSig_b1_f","WeightNormalized*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
@@ -133,22 +146,43 @@ int main() {
         float bckgd1_integral_f[25];
         float bckgd2_integral_f[25];
 
-        for (int j=0; j<21; j++) {
+        // Background chain for significance
+        TChain *bkg_chain = new TChain("nominal");
+        bkg_chain->Add(bpath1_c);
+        bkg_chain->Add(bpath2_c);
+        
+        // Initializing significance
+        float sig[25];
+        float sig_f[25];
+
+        for (int j=0; j<25; j++) {
             // Finding the bin associated with the cut value
-            cut_value[j] = j/20.;
+            cut_value[j] = j/24.;
             int cut_bin  = hist->FindBin(cut_value[j]);
             int high_bin = hist->FindBin(1);
 
             // Calculating integrals
-            signal_integral[j] = hist   ->Integral(cut_bin,high_bin);
-            bckgd1_integral[j] = hist_b1->Integral(cut_bin,high_bin);
-            bckgd2_integral[j] = hist_b2->Integral(cut_bin,high_bin);
+            signal_integral[j]   = hist     ->Integral(cut_bin,high_bin);
+            bckgd1_integral[j]   = hist_b1  ->Integral(cut_bin,high_bin);
+            bckgd2_integral[j]   = hist_b2  ->Integral(cut_bin,high_bin);
             signal_integral_f[j] = hist_f   ->Integral(cut_bin,high_bin);
             bckgd1_integral_f[j] = hist_b1_f->Integral(cut_bin,high_bin);
             bckgd2_integral_f[j] = hist_b2_f->Integral(cut_bin,high_bin);
+
+            // Events without conditions
+            int bkg_events = bkg_chain->GetEntries(Form("WeightNormalized*(pSignal>%f)",cut_value[j]));
+            int sig_events = data     ->GetEntries(Form("WeightNormalized*(pSignal>%f)",cut_value[j]));
+
+            // Events with conditions for significance
+            int bkg_events_f = bkg_chain->GetEntries("WeightNormalized*(M_jj>500)*(Deta_jj>3.5)");
+            int sig_events_f = data     ->GetEntries("WeightNormalized*(M_jj>500)*(Deta_jj>3.5)");
+
+            // Calculating significance
+            sig[j]   = AMS(sig_events, bkg_events);
+            sig_f[j] = AMS(sig_events_f, bkg_events_f);
         }
 
-        // Drawing the results
+        // Drawing the integrals
         c1->cd(2);
         TGraph* sig_integral = new TGraph(20, cut_value, signal_integral);
         sig_integral->SetName("sig_integral");
@@ -169,7 +203,7 @@ int main() {
         b2_integral->SetLineColor(4);
         b2_integral->Draw("SAME");
 
-        auto legend = new TLegend(0.12,0.12,0.32,0.25);
+        auto legend = new TLegend(0.12,0.12,0.38,0.29);
         legend->AddEntry("sig_integral", "signal" ,"lep");
         legend->AddEntry("b1_integral", "QCD background" ,"lep");
         legend->AddEntry("b2_integral", "EW background" ,"lep");
@@ -177,12 +211,12 @@ int main() {
 
         gPad->SetLogy();
 
-        c1->cd(4);
+        c1->cd(5);
         TGraph* sig_integral_f = new TGraph(20, cut_value, signal_integral_f);
         sig_integral_f->SetName("sig_integral_f");
         sig_integral_f->SetLineWidth(2);
         sig_integral_f->SetLineColor(99);
-        sig_integral_f->SetTitle("Integrals; Cut value");
+        sig_integral_f->SetTitle("Integrals - conditionned; Cut value");
         sig_integral_f->Draw();
 
         TGraph* b1_integral_f = new TGraph(20, cut_value, bckgd1_integral_f);
@@ -197,7 +231,28 @@ int main() {
         b2_integral_f->SetLineColor(4);
         b2_integral_f->Draw("SAME");
 
-        gPad->SetLogy();
+        gPad->SetLogy();    
+
+        // Drawing significance
+        c1->cd(3);
+        TGraph* significance = new TGraph(20, cut_value, sig);
+        significance->SetName("significance");
+        significance->SetLineWidth(2);
+        significance->SetLineColor(1);
+        significance->SetTitle("Significance; Cut value");
+        significance->Draw();
+
+        TGraph* significance_f = new TGraph(20,cut_value,sig_f);
+        significance_f->SetName("significance_f");
+        significance_f->SetLineWidth(2);
+        significance_f->SetLineColor(2);
+        significance_f->SetTitle("Significance; Cut value");
+        significance_f->Draw("SAME");
+
+        auto legend2 = new TLegend(0.12,0.12,0.42,0.27);
+        legend2->AddEntry("significance", "Cut value dependant" ,"lep");
+        legend2->AddEntry("significance_f", "Conditionned" ,"lep");
+        legend2->Draw();
 
         // Saving the figure as .png and .root
         string sfname1 = savedir + "pSig_integrals_m" + to_string(mass) + "_and_bckgrd.png";
