@@ -11,7 +11,7 @@
 #include <iostream>
 
 // SUBDIRECTORIES TO EDIT
-string idir  = "0630/";
+string idir  = "0707/";
 string tmass = "m900";
 string sdir  = idir+tmass;
 
@@ -167,7 +167,7 @@ void nn_per_mass(TString varname="pSignal") {
   legend->Draw();
   c1->SaveAs("ControlPlots/"+idir+"/NN_output/"+varname+"_"+tmass+".png");
   c1->SaveAs("ControlPlots/"+idir+"/NN_output/"+varname+"_"+tmass+".root");
-
+  c1->Close();
   return;
  
 }
