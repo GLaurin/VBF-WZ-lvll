@@ -44,21 +44,32 @@ float AMS(int s,int b) {
 int main() {
 
     // PARAMETERS TO EDIT
-    string sdir  = "0630";
+    string sdir  = "0707";
     string model = "GM";
 
     string rootdir = "OutputRoot/" + sdir + '/';
     string savedir = "ControlPlots/" + sdir + "/pSignal/"; // MAKE SURE PSIGNAL EXISTS IN SUBDIRECTORY
 
     // Initial mass and mass file ID
-    int mass_num = 28;
+    int mass_num;
     int mass;  
+    string f_ID1;
+    string f_ID2;
+    string f_ID3;
     if (model == "GM") {
         mass = 200;
+        mass_num = 28;
+        f_ID1 = "3050";
+        f_ID2 = "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_";
+        f_ID3 = "_qcd0";
     }
 
     if (model == "HVT") {
         mass = 300;
+        mass_num = 31;
+        f_ID1 = "3077";
+        f_ID2 = "_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m";
+        f_ID3 = "";
     }
     
     // Looping on all masses
@@ -66,7 +77,11 @@ int main() {
         
         // Creating the path for the data file
         string fdir  = rootdir + "m" + to_string(mass);
-        string fname = "new_" + model + "_mainMVA.3050" + to_string(mass_num) + "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_" + to_string(mass) + "_qcd0_ntuples.root";
+        string mass_ID = to_string(mass);
+        if (model=="HVT" && mass<1000) {
+            mass_ID = "0" + mass_ID;
+        }
+        string fname = "new_" + model + "_mainMVA." + f_ID1 + to_string(mass_num) + f_ID2 + mass_ID + f_ID3 + "_ntuples.root";
         string fpath = fdir + "/" + fname;
         char const *fpath_c = fpath.c_str();
         
