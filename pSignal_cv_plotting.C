@@ -34,19 +34,10 @@ each of these are also drawn.
 //------------------------------------------------------------------------------
 
 //========================== PARAMETERS TO EDIT ================================
-string sdir  = "0708_GM";       // Subdirectory containing the files and in which to save the figures
-string model = "GM";            // Model used
-string opt_ID  = "_abs";    // Optional file name identification
+string sdir  = "0708_HVT";       // Subdirectory containing the files and in which to save the figures
+string model = "HVT";            // Model used
+string opt_ID  = "_re";    // Optional file name identification
 //==============================================================================
-
-float AMS_b0708(int s,int b) {
-    float br     = 0.00001;
-    float sigma = pow((b+br),0.5);
-    float n     = s+b+br;
-    float radic = 2*(n*log(n*(b+br+sigma)/(pow(b,2)+n*sigma+br))-pow(b,2)/sigma*log(1+sigma*(n-b)/(b*(b+br+sigma))));
-    float sig   = pow(radic,0.5);
-    return sig;
-}
 
 double AMS(int s, int b) {
     // Approximate Median Significance
@@ -68,8 +59,8 @@ int main() {
     string f_ID2;
     string f_ID3;
     if (model == "GM") {
-        mass = 800;                                                             // EDIT BACK TO 200 !!!
-        mass_num = 34;                                                          // EDIT BACK TO 28 !!!
+        mass = 200;                                                             // EDIT BACK TO 200 !!!
+        mass_num = 28;                                                          // EDIT BACK TO 28 !!!
         f_ID1 = "3050";
         f_ID2 = "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_";
         f_ID3 = "_qcd0";
@@ -84,7 +75,7 @@ int main() {
     }
     
     // Looping on all masses
-    for (int i=0; i<1; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE   // EDIT BACK TO i<8 !!!
+    for (int i=0; i<8; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE   // EDIT BACK TO i<8 !!!
         
         // Creating the path for the data file
         string fdir  = rootdir + "m" + to_string(mass);
@@ -109,7 +100,7 @@ int main() {
         c1->Divide(3,2);
         c1->cd(1);
         data->SetLineColor(99);
-        data->Draw("pSignal >> pSig","abs(WeightNormalized)","HIST");
+        data->Draw("pSignal >> pSig","(WeightNormalized)","HIST");
         TH1F *hist = (TH1F*)gDirectory->Get("pSig");
         hist->SetTitle(Form("pSignal - mass %i",mass));
 //        gPad->SetLogy();
@@ -117,7 +108,7 @@ int main() {
        // Applying condtions to signal
         c1->cd(4);
         data->SetLineColor(99);
-        data->Draw("pSignal >> pSig_f","abs(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","HIST");
+        data->Draw("pSignal >> pSig_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","HIST");
         TH1F *hist_f = (TH1F*)gDirectory->Get("pSig_f");
         hist_f->SetTitle("pSignal - cut-based");
 //        gPad->SetLogy();
@@ -147,8 +138,8 @@ int main() {
         c1->cd(1);
         b1->SetLineColor(77);
         b2->SetLineColor(4);
-        b1->Draw("pSignal >> pSig_b1","abs(WeightNormalized)","SAME HIST");
-        b2->Draw("pSignal >> pSig_b2","abs(WeightNormalized)","SAME HIST");
+        b1->Draw("pSignal >> pSig_b1","(WeightNormalized)","SAME HIST");
+        b2->Draw("pSignal >> pSig_b2","(WeightNormalized)","SAME HIST");
 
         TH1F *hist_b1 = (TH1F*)gDirectory->Get("pSig_b1");
         TH1F *hist_b2 = (TH1F*)gDirectory->Get("pSig_b2");
@@ -157,8 +148,8 @@ int main() {
         c1->cd(4);
         b1->SetLineColor(77);
         b2->SetLineColor(4);
-        b1->Draw("pSignal >> pSig_b1_f","abs(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
-        b2->Draw("pSignal >> pSig_b2_f","abs(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
+        b1->Draw("pSignal >> pSig_b1_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
+        b2->Draw("pSignal >> pSig_b2_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
 
         TH1F *hist_b1_f = (TH1F*)gDirectory->Get("pSig_b1_f");
         TH1F *hist_b2_f = (TH1F*)gDirectory->Get("pSig_b2_f");
@@ -289,7 +280,7 @@ int main() {
     	c1->SaveAs(sfname1_c);
 //    	c1->SaveAs(sfname2_c);
         
-//        c1->Close();
+        c1->Close();
         
         // Updating mass and mass file ID
         mass_num += 1;

@@ -38,18 +38,11 @@ def getSamples(mass):
     of a training for an individual mass
     """
     class input_samples_NN:
-        # Assumed luminosity
-        lumi = 140.
-
-        # Fraction used for training 
-        trafrac = 0.9
-
-        # Prefixe added to the ntuples of the output
-        prestr = "new_GM_main"
+        # Prefixe added to the ntuples of the training output
+        prestr = f"new_{args.m}_main"
 
         # Directory where ntuples are located
-        filedir = "OutputRoot/0708_GM/m300/"+prestr
-
+        filedir = f"OutputRoot/{args.sd}/m300/"+prestr
 
         # Background samples
         bckgr = {
@@ -68,7 +61,18 @@ def getSamples(mass):
                   'MVA.450773_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m700_ntuples.root',
                   'MVA.450774_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m800_ntuples.root',
                   'MVA.305035_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_900_qcd0_ntuples.root']}
-
+        sigHVT = {
+        'name' : ['MVA.307730_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0250_ntuples.root',
+                  'MVA.307731_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0300_ntuples.root',
+                  'MVA.309528_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0350_ntuples.root',
+                  'MVA.307732_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0400_ntuples.root',
+                  'MVA.309529_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0450_ntuples.root',
+                  'MVA.307733_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0500_ntuples.root',
+                  'MVA.307734_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0600_ntuples.root',
+                  'MVA.307735_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0700_ntuples.root',
+                  'MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root',
+                  'MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root']}
 
     return input_samples_NN
 
@@ -114,7 +118,7 @@ def bkgEvents(cins, mass, ucut=0):
 
     return bkg_nEv_sum, bkg[0], bkg[1]
 
-def sigEvents(cins, mass, ucut=0):
+def sigEvents(cins, mass, model, ucut=0):
     """
     Returns the cut-based, normalize-weighted number of events of the signal
     for an individual mass within the mass window
@@ -124,9 +128,14 @@ def sigEvents(cins, mass, ucut=0):
     ucut  - user selection to use instead of cut-based selection
     """
     # Accessing the data
-    isf = np.where([f"{mass}" in cins.sigGM['name'][i] for i in range(len(cins.sigGM['name']))])[0]
+    if model == "GM":
+        filenames = cins.sigGM['name']
+    elif model == "HVT":
+        filenames = cins.sigHVT['name']
+
+    isf = np.where([f"{mass}" in filenames[i] for i in range(len(filenames))])[0]
     isf = int(isf)
-    sig_file = ROOT.TFile(cins.filedir+cins.sigGM['name'][isf])
+    sig_file = ROOT.TFile(cins.filedir+filenames[isf])
     tree = sig_file.Get('nominal')
     
     # Choosing the cut
@@ -145,9 +154,21 @@ def sigEvents(cins, mass, ucut=0):
 
 #-------------------------------------------------------------------------------
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--m",  "--model",     help="Model to use",                    default="GM", type=str)
+parser.add_argument("--cv", "--cutvalue",  help="Cut value to apply to NN",        default=0.5,  type=float)
+parser.add_argument("--s",  "--save",      help="1 to save the results",            default=0,    type=bool)
+parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",  type=str)
+parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0", type=str)
+args = parser.parse_args()
+
+#-------------------------------------------------------------------------------
+
 # Initializing arrays
 res_arr  = np.zeros((16,4))
 mass_arr = np.arange(200,901,100)
+if args.m == "HVT":
+    mass_arr += 100
 
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
@@ -156,11 +177,11 @@ for c in range(len(mass_arr)):
     mass = mass_arr[c]
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass)
-    n_sig = sigEvents(cins_CB, mass)
+    n_sig = sigEvents(cins_CB, mass, args.m)
 
     # Number of events for NN analysis
-    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, "pSignal>0.5")
-    NN_sig = sigEvents(getSamples(mass), mass, "pSignal>0.5")
+    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{args.cv}")
+    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{args.cv}")
 
     # Printing number of events
     print(f"\nMass : {mass} \t Cut-based \t NN")
@@ -180,13 +201,18 @@ for c in range(len(mass_arr)):
     res_arr[c*2] = n_sig, QCD, EW, ams
     res_arr[c*2+1] = NN_sig, NN_QCD, NN_EW, NN_ams
 
-# Creating a DataFrame of the results
-mass_rl = [m for m in mass_arr for _ in (0,1)]
-cols_rl = ["Cut-based","NN"]*8
-indx_rl = ["Signal","QCD","EW","Significance"]
-pd.options.display.float_format = '{:.2f}'.format
-res_DF  = pd.DataFrame(res_arr.T, columns=pd.MultiIndex.from_tuples(list(zip(mass_rl,cols_rl))),index=indx_rl)
+if args.s:
+    # Creating a DataFrame of the results
+    mass_rl = [m for m in mass_arr for _ in (0,1)]
+    cols_rl = ["Cut-based","NN"]*8
+    indx_rl = ["Signal","QCD","EW","Significance"]
+    pd.options.display.float_format = '{:.2f}'.format
+    res_DF  = pd.DataFrame(res_arr.T, columns=pd.MultiIndex.from_tuples(list(zip(mass_rl,cols_rl))),index=indx_rl)
 
-# Saving the results
-res_DF.to_csv("Results/analysis_CBvsNN.csv")
+    # Saving the results
+    res_name = f"Results/analysis_CBvsNN_{args.m}"
+    if args.rID != "0": res_name += "_{args.rID}"
+    res_name += ".csv"
+    res_DF.to_csv(res_name)
+    print(f"Saving results as {res_name}")
 
