@@ -6,7 +6,7 @@ This training framework is made for A WZ->lvll VBS resonance selection using neu
 ## Running the training
 The example below trains a model for a single mass point at 200 GeV and saves the control plots in a subdirectory ControlPlots/m200
 ```
-python3 OPT_VBS_NN.py --mass_points 200 --model GM --booldropout=1 --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex 0 --nFold 4 --sdir m200
+python3 OPT_VBS_NN.py --mass_points 200 --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex 0 --nFold 4 --sdir m200
 ```
 
 This next example trains 4 folds for mass points 200 and 300 individually, saving each plots and models seperately
@@ -16,7 +16,7 @@ do
     for n in 0 1 2 3
     do
         sdir="m"$mass"-"$n
-        python3 OPT_VBS_NN.py --mass_points $mass --model GM --booldropout=1 --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir 0630/$sdir
+        python3 OPT_VBS_NN.py --mass_points $mass --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir 0630/$sdir
     done
 done
 ```
