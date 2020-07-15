@@ -32,6 +32,17 @@ import os
 #-------------------------------------------------------------------------------
 #===============================================================================
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--m",  "--model",     help="Model to use",                     default="GM", type=str)
+parser.add_argument("--cv", "--cutvalue",  help="Cut value to apply to NN",         default=0.5,  type=float)
+parser.add_argument("--s",  "--save",      help="1 to save the results",            default=0,    type=bool)
+parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",   type=str)
+parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
+parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), Weight*xs/nevents (1) or Weight/5 (2)", default=0, type=int)
+args = parser.parse_args()
+
+#-------------------------------------------------------------------------------
+
 def getSamples(mass):
     """
     Similar to config_OPT_NN.input_samples, except this class uses the output
@@ -46,33 +57,42 @@ def getSamples(mass):
 
         # Background samples
         bckgr = {
-            'name' : ['MVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root',
-                      'MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root']}
+        'name'    : ['MVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root',
+                     'MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root'],
+        'xs'      : [1704., 47.],
+        'nevents' : [3890000, 7325000]}
+
         # Signal samples
         sigGM = {
-        'name' : ['MVA.450765_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m200_ntuples.root',
-                  'MVA.450766_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m250_ntuples.root',
-                  'MVA.450767_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m300_ntuples.root', 
-                  'MVA.450768_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m350_ntuples.root', 
-                  'MVA.450769_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m400_ntuples.root',
-                  'MVA.450770_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m450_ntuples.root',
-                  'MVA.450771_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m500_ntuples.root',
-                  'MVA.450772_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m600_ntuples.root',
-                  'MVA.450773_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m700_ntuples.root',
-                  'MVA.450774_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m800_ntuples.root',
-                  'MVA.305035_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_900_qcd0_ntuples.root']}
+        'name'   : ['MVA.450765_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m200_ntuples.root',
+                    'MVA.450766_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m250_ntuples.root',
+                    'MVA.450767_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m300_ntuples.root', 
+                    'MVA.450768_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m350_ntuples.root', 
+                    'MVA.450769_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m400_ntuples.root',
+                    'MVA.450770_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m450_ntuples.root',
+                    'MVA.450771_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m500_ntuples.root',
+                    'MVA.450772_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m600_ntuples.root',
+                    'MVA.450773_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m700_ntuples.root',
+                    'MVA.450774_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m800_ntuples.root',
+                    'MVA.305035_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_900_qcd0_ntuples.root'],
+        'xs'      : [7.0596,  7.710,  3.9238,   4.582, 2.4428,    2.95, 1.6113, 1.1005, 0.77398, 0.55433, 0.40394 ],
+        'nevents' : [70000,   70000,   70000,  190000,  70000,   70000,  70000,  70000,   70000,   70000,   50000 ],
+        'filtEff' : [1,     0.77156,       1, 0.77507,      1, 0.77891,      1,      1,       1,       1,       1 ]}
         sigHVT = {
-        'name' : ['MVA.307730_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0250_ntuples.root',
-                  'MVA.307731_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0300_ntuples.root',
-                  'MVA.309528_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0350_ntuples.root',
-                  'MVA.307732_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0400_ntuples.root',
-                  'MVA.309529_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0450_ntuples.root',
-                  'MVA.307733_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0500_ntuples.root',
-                  'MVA.307734_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0600_ntuples.root',
-                  'MVA.307735_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0700_ntuples.root',
-                  'MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root',
-                  'MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root']}
+        'name'   : ['MVA.307730_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0250_ntuples.root',
+                    'MVA.307731_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0300_ntuples.root',
+                    'MVA.309528_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0350_ntuples.root',
+                    'MVA.307732_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0400_ntuples.root',
+                    'MVA.309529_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0450_ntuples.root',
+                    'MVA.307733_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0500_ntuples.root',
+                    'MVA.307734_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0600_ntuples.root',
+                    'MVA.307735_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0700_ntuples.root',
+                    'MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root',
+                    'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root',
+                    'MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root'],
+        'xs'      : [24.42 , 10.54 , 2.299 , 0.7975, 0.3408, 0.1663, 0.087984, 0.049882, 0.02961, 1.3050, 4.4843],
+        'nevents' : [190000, 190000, 190000, 190000, 190000, 190000,   190000,   175000,  190000, 160000, 160000],
+        'filtEff' : [     1,      1,      1,      1,      1,      1,        1,        1,       1,      1,      1]}
 
     return input_samples_NN
 
@@ -86,18 +106,18 @@ def AMS(n_sig, n_bkg, br=0.00001):
     
     return math.sqrt(C)
 
-def bkgEvents(cins, mass, ucut=0):
+def bkgEvents(cins, mass, ucut=0, uwei=0):
     """
     Returns the cut-based, normalize-weighted number of background events within
     the mass window - total, QCD and EW
 
     cins - config.input_samples or similar object
     mass - 
-    ucut  - user selection to use instead of cut-based selection
+    ucut - user selection to use instead of cut-based selection
+    uwei - method of normalizing weight
     """
 
     bkg = np.array([0,0])    # Number of events for QCD and EW
-    bkg_nEv_sum = 0          # Sum of all background events
 
     for i in range(len(cins.bckgr['name'])):
         # Accessing the data
@@ -113,29 +133,30 @@ def bkgEvents(cins, mass, ucut=0):
         bkg_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
         # Calculating the number of events
-        bkg[i] = sum(bkg_DF['WeightNormalized'])
-        bkg_nEv_sum += bkg[i]
+        if uwei==0:   bkg[i] = sum(bkg_DF['WeightNormalized'])
+        elif uwei==1: bkg[i] = sum(abs(bkg_DF['Weight'])*cins.bckgr['xs'][i]*140/cins.bckgr['nevents'][i])
+        elif uwei==2: bkg[i] = sum(abs(bkg_DF['Weight'])/5)
 
-    return bkg_nEv_sum, bkg[0], bkg[1]
+    return sum(bkg), bkg[0], bkg[1]
 
-def sigEvents(cins, mass, model, ucut=0):
+def sigEvents(cins, mass, model, ucut=0, uwei=0):
     """
     Returns the cut-based, normalize-weighted number of events of the signal
     for an individual mass within the mass window
 
     cins - config.input_samples or similar object
-    mass - 
-    ucut  - user selection to use instead of cut-based selection
+    mass - mass at which the numbe rof events is evaluated
+    ucut - user selection to use instead of cut-based selection
+    uwei - user weight to use instead of WeightNormalized
     """
-    # Accessing the data
+    # Accessing the signal for the appropriate model
     if model == "GM":
-        filenames = cins.sigGM['name']
+        sigMO = cins.sigGM
     elif model == "HVT":
-        filenames = cins.sigHVT['name']
+        sigMO = cins.sigHVT
 
-    isf = np.where([f"{mass}" in filenames[i] for i in range(len(filenames))])[0]
-    isf = int(isf)
-    sig_file = ROOT.TFile(cins.filedir+filenames[isf])
+    isf = int(np.where([f"{mass}" in sigMO['name'][i] for i in range(len(sigMO['name']))])[0])
+    sig_file = ROOT.TFile(cins.filedir+sigMO['name'][isf])
     tree = sig_file.Get('nominal')
     
     # Choosing the cut
@@ -148,19 +169,11 @@ def sigEvents(cins, mass, model, ucut=0):
 
     # Calculating the number of events
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
-    sig_nEv = sum(sig_DF['WeightNormalized'])
+    if uwei==0:   sig_nEv = sum(sig_DF['WeightNormalized'])
+    elif uwei==1: sig_nEv = sum(abs(sig_DF['Weight'])*sigMO['xs'][isf]*140/sigMO['nevents'][isf]*sigMO['filtEff'][isf])
+    elif uwei==2: sig_nEv = sum(abs(sig_DF['Weight'])/5)
 
-    return sig_nEv   
-
-#-------------------------------------------------------------------------------
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--m",  "--model",     help="Model to use",                    default="GM", type=str)
-parser.add_argument("--cv", "--cutvalue",  help="Cut value to apply to NN",        default=0.5,  type=float)
-parser.add_argument("--s",  "--save",      help="1 to save the results",            default=0,    type=bool)
-parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",  type=str)
-parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0", type=str)
-args = parser.parse_args()
+    return sig_nEv
 
 #-------------------------------------------------------------------------------
 
@@ -175,13 +188,14 @@ cins_CB = conf.input_samples
 
 for c in range(len(mass_arr)):
     mass = mass_arr[c]
+
     # Number of events for cut-based analysis
-    n_bkg, QCD, EW = bkgEvents(cins_CB, mass)
-    n_sig = sigEvents(cins_CB, mass, args.m)
+    n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
+    n_sig = sigEvents(cins_CB, mass, args.m, uwei=args.w)
 
     # Number of events for NN analysis
-    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{args.cv}")
-    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{args.cv}")
+    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{args.cv}", args.w)
+    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{args.cv}", args.w)
 
     # Printing number of events
     print(f"\nMass : {mass} \t Cut-based \t NN")
@@ -211,7 +225,7 @@ if args.s:
 
     # Saving the results
     res_name = f"Results/analysis_CBvsNN_{args.m}"
-    if args.rID != "0": res_name += "_{args.rID}"
+    if args.rID != "0": res_name += f"_{args.rID}"
     res_name += ".csv"
     res_DF.to_csv(res_name)
     print(f"Saving results as {res_name}")
