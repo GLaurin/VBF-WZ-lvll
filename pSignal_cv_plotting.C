@@ -34,9 +34,9 @@ each of these are also drawn.
 //------------------------------------------------------------------------------
 
 //========================== PARAMETERS TO EDIT ================================
-string sdir  = "0708_HVT";       // Subdirectory containing the files and in which to save the figures
-string model = "HVT";            // Model used
-string opt_ID  = "_re";    // Optional file name identification
+string sdir   = "HVT_0717";       // Subdirectory containing the files and in which to save the figures
+string model  = "HVT";            // Model used
+string opt_ID = "_4g";    // Optional file name identification
 //==============================================================================
 
 double AMS(int s, int b) {
@@ -59,11 +59,11 @@ int main() {
     string f_ID2;
     string f_ID3;
     if (model == "GM") {
-        mass = 200;                                                             // EDIT BACK TO 200 !!!
-        mass_num = 28;                                                          // EDIT BACK TO 28 !!!
-        f_ID1 = "3050";
-        f_ID2 = "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_";
-        f_ID3 = "_qcd0";
+        mass = 200;
+        mass_num = 64;
+        f_ID1 = "4507";
+        f_ID2 = "_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m";
+        f_ID3 = "";
     }
 
     if (model == "HVT") {
@@ -75,7 +75,7 @@ int main() {
     }
     
     // Looping on all masses
-    for (int i=0; i<8; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE   // EDIT BACK TO i<8 !!!
+    for (int i=0; i<8; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE
         
         // Creating the path for the data file
         string fdir  = rootdir + "m" + to_string(mass);
@@ -83,6 +83,8 @@ int main() {
         if (model=="HVT" && mass<1000) {
             mass_ID = "0" + mass_ID;
         }
+        if (model=="GM" && mass<600) {mass_num++;}
+        if (model=="GM" && mass==900) {f_ID1 = "3050"; f_ID2 = "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_"; f_ID3 = "_qcd0"; mass_num = 35;}
         string fname = "new_" + model + "_mainMVA." + f_ID1 + to_string(mass_num) + f_ID2 + mass_ID + f_ID3 + "_ntuples.root";
         string fpath = fdir + "/" + fname;
         char const *fpath_c = fpath.c_str();
@@ -96,8 +98,8 @@ int main() {
         sfile->GetObject("nominal", data);
         
         // Drawing the data
-        TCanvas *c1 = new TCanvas("c1","c2",1000,600);
-        c1->Divide(3,2);
+        TCanvas *c1 = new TCanvas("c1","c2",800,600);
+        c1->Divide(2,2);
         c1->cd(1);
         data->SetLineColor(99);
         data->Draw("pSignal >> pSig","(WeightNormalized)","HIST");
@@ -106,7 +108,7 @@ int main() {
 //        gPad->SetLogy();
 
        // Applying condtions to signal
-        c1->cd(4);
+        c1->cd(3);
         data->SetLineColor(99);
         data->Draw("pSignal >> pSig_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","HIST");
         TH1F *hist_f = (TH1F*)gDirectory->Get("pSig_f");
@@ -145,7 +147,7 @@ int main() {
         TH1F *hist_b2 = (TH1F*)gDirectory->Get("pSig_b2");
 
         // Applying conditions to background
-        c1->cd(4);
+        c1->cd(3);
         b1->SetLineColor(77);
         b2->SetLineColor(4);
         b1->Draw("pSignal >> pSig_b1_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","SAME HIST");
@@ -155,7 +157,7 @@ int main() {
         TH1F *hist_b2_f = (TH1F*)gDirectory->Get("pSig_b2_f");
 
         // Initializing cut values and integrals
-        const int ncv = 50;
+        const int ncv = 100;
         float cut_value[ncv];
         float signal_integral[ncv];
         float bckgd1_integral[ncv];
@@ -229,7 +231,7 @@ int main() {
 
 //        gPad->SetLogy();
 
-        c1->cd(5);
+/*        c1->cd(5);
         TGraph* sig_integral_f = new TGraph(ncv, cut_value, signal_integral_f);
         sig_integral_f->SetName("sig_integral_f");
         sig_integral_f->SetLineWidth(2);
@@ -250,9 +252,9 @@ int main() {
         b2_integral_f->Draw("SAME");
 
 //        gPad->SetLogy();    
-
+*/
         // Drawing significance
-        c1->cd(3);
+        c1->cd(4);
         TGraph* significance = new TGraph(ncv, cut_value, sig);
         significance->SetName("significance");
         significance->SetLineWidth(2);
@@ -278,7 +280,7 @@ int main() {
         char const *sfname1_c = sfname1.c_str();
         char const *sfname2_c = sfname2.c_str();
     	c1->SaveAs(sfname1_c);
-//    	c1->SaveAs(sfname2_c);
+    	c1->SaveAs(sfname2_c);
         
         c1->Close();
         

@@ -82,7 +82,9 @@ if __name__ == '__main__':
 
     # Checking for or creating subdirectory
     sub_dir_cp = "ControlPlots/"+args.sdir
+    sub_dir_om = "OutputModel/"+args.sdir
     Path(sub_dir_cp).mkdir(parents=True, exist_ok=True)
+    Path(sub_dir_om).mkdir(parents=True, exist_ok=True)
 
     #Load input_sample class from config file
     input_sample=conf.input_samples
@@ -155,7 +157,7 @@ if __name__ == '__main__':
     #    f.write(model.to_json())
 
     #Define checkpoint to save best performing NN and early stopping
-    path='./OutputModel/'+nameadd+'checkpoint_NN.h5'
+    path='./OutputModel/'+args.sdir+'/'+nameadd+'checkpoint_NN.h5'
     #checkpoint=keras.callbacks.ModelCheckpoint(filepath='output_NN.h5', monitor='val_acc', verbose=args.v, save_best_only=True)
     callbacks=[EarlyStopping(monitor='val_loss', patience=args.patience),ModelCheckpoint(filepath=path, monitor='val_loss', verbose=args.v, save_best_only=True)]
 
@@ -223,5 +225,5 @@ if __name__ == '__main__':
     outputName='sigvalid_'+args.model+'_m{}'.format(args.mass_points if len(args.mass_points)==1 else "Multi")+'_S'+str(round(highsig,3))+args.output+"_CV"+cv_str+('_F{0}o{1}'.format(args.Findex,args.nFold))+'_NN'
 
     #Save model in OutputModel with the highest significance obtained on validation set
-    model.save('./OutputModel/'+outputName+'.h5')
-    pickle.dump(transform,open("OutputModel/"+outputName+".pkl", 'wb'))
+    model.save('./OutputModel/'+args.sdir+'/'+outputName+'.h5')
+    pickle.dump(transform,open("OutputModel/"+args.sdir+'/'+outputName+".pkl", 'wb'))

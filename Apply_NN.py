@@ -116,7 +116,6 @@ def save_file(data, pred, proba, filename, phys_model, sub_dir):
     # Checking for or creating subdirectory
     sub_dir_or = "OutputRoot/"+sub_dir
     Path(sub_dir_or).mkdir(parents=True, exist_ok=True)
-    print(sub_dir_or)
     outputPath=sub_dir_or+'/new_'+phys_model+'_'+filename     #print(outputPath)
     array2root(np.array(data.to_records()), outputPath, 'nominal', mode='recreate')
     print('Save file as= {}'.format(outputPath))

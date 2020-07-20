@@ -34,11 +34,9 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--m",  "--model",     help="Model to use",                     default="GM", type=str)
-parser.add_argument("--cv", "--cutvalue",  help="Cut value to apply to NN",         default=0.5,  type=float)
-parser.add_argument("--s",  "--save",      help="1 to save the results",            default=0,    type=bool)
 parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",   type=str)
 parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
-parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), Weight*xs/nevents (1) or Weight/5 (2)", default=0, type=int)
+parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), abs(WN) (1), or Weight*xs/nevents (2)", default=0, type=int)
 args = parser.parse_args()
 
 #-------------------------------------------------------------------------------
@@ -53,7 +51,7 @@ def getSamples(mass):
         prestr = f"new_{args.m}_main"
 
         # Directory where ntuples are located
-        filedir = f"OutputRoot/{args.sd}/m300/"+prestr
+        filedir = f"OutputRoot/{args.sd}/"+prestr
 
         # Background samples
         bckgr = {
@@ -96,7 +94,16 @@ def getSamples(mass):
 
     return input_samples_NN
 
-def AMS(n_sig, n_bkg, br=0.00001):
+def getCV():
+    cv = 0
+    for model in os.listdir(f"OutputModel/{args.sd}/"):
+        if model.endswith("4_NN.h5"):
+            print(model)            
+            temp = float(model[int(model.find("CV")+3):int(model.find("CV")+8)])
+            cv += temp
+    return cv/4
+
+def AMS_2(n_sig, n_bkg, br=0.00001):
     """ 
     Approximate Median Significance
     """
@@ -105,6 +112,17 @@ def AMS(n_sig, n_bkg, br=0.00001):
     C = 2*(A*B - n_sig)
     
     return math.sqrt(C)
+
+def AMS(s, b):
+    """ Approximate Median Significance """
+
+    br = 0.00001
+    sigma = math.sqrt(b+br)
+    n = s+b+br
+    radicand = 2 *( n * math.log (n*(b+br+sigma)/(b**2+n*sigma+br))-b**2/sigma*math.log(1+sigma*(n-b)/(b*(b+br+sigma))))
+    significance = math.sqrt(radicand)
+    
+    return significance
 
 def bkgEvents(cins, mass, ucut=0, uwei=0):
     """
@@ -133,9 +151,9 @@ def bkgEvents(cins, mass, ucut=0, uwei=0):
         bkg_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
         # Calculating the number of events
-        if uwei==0:   bkg[i] = sum(bkg_DF['WeightNormalized'])
-        elif uwei==1: bkg[i] = sum(abs(bkg_DF['Weight'])*cins.bckgr['xs'][i]*140/cins.bckgr['nevents'][i])
-        elif uwei==2: bkg[i] = sum(abs(bkg_DF['Weight'])/5)
+        if   uwei==0: bkg[i] = sum(bkg_DF['WeightNormalized'])
+        elif uwei==1: bkg[i] = sum(abs(bkg_DF['WeightNormalized']))
+        elif uwei==2: bkg[i] = sum(abs(bkg_DF['Weight'])*cins.bckgr['xs'][i]*140/cins.bckgr['nevents'][i])
 
     return sum(bkg), bkg[0], bkg[1]
 
@@ -169,9 +187,9 @@ def sigEvents(cins, mass, model, ucut=0, uwei=0):
 
     # Calculating the number of events
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
-    if uwei==0:   sig_nEv = sum(sig_DF['WeightNormalized'])
-    elif uwei==1: sig_nEv = sum(abs(sig_DF['Weight'])*sigMO['xs'][isf]*140/sigMO['nevents'][isf]*sigMO['filtEff'][isf])
-    elif uwei==2: sig_nEv = sum(abs(sig_DF['Weight'])/5)
+    if   uwei==0: sig_nEv = sum(sig_DF['WeightNormalized'])
+    elif uwei==1: sig_nEv = sum(abs(sig_DF['WeightNormalized']))
+    elif uwei==2: sig_nEv = sum(abs(sig_DF['Weight'])*sigMO['xs'][isf]*140/sigMO['nevents'][isf]*sigMO['filtEff'][isf])
 
     return sig_nEv
 
@@ -186,6 +204,9 @@ if args.m == "HVT":
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
 
+cv = getCV()
+print(f"Mean cut value : {cv}")
+
 for c in range(len(mass_arr)):
     mass = mass_arr[c]
 
@@ -194,8 +215,8 @@ for c in range(len(mass_arr)):
     n_sig = sigEvents(cins_CB, mass, args.m, uwei=args.w)
 
     # Number of events for NN analysis
-    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{args.cv}", args.w)
-    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{args.cv}", args.w)
+    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{cv}", args.w)
+    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{cv}", args.w)
 
     # Printing number of events
     print(f"\nMass : {mass} \t Cut-based \t NN")
@@ -215,7 +236,7 @@ for c in range(len(mass_arr)):
     res_arr[c*2] = n_sig, QCD, EW, ams
     res_arr[c*2+1] = NN_sig, NN_QCD, NN_EW, NN_ams
 
-if args.s:
+if args.rID != "0":
     # Creating a DataFrame of the results
     mass_rl = [m for m in mass_arr for _ in (0,1)]
     cols_rl = ["Cut-based","NN"]*8
@@ -224,7 +245,8 @@ if args.s:
     res_DF  = pd.DataFrame(res_arr.T, columns=pd.MultiIndex.from_tuples(list(zip(mass_rl,cols_rl))),index=indx_rl)
 
     # Saving the results
-    res_name = f"Results/analysis_CBvsNN_{args.m}"
+    Path(f"Results/{args.sd}").mkdir(parents=True, exist_ok=True)
+    res_name = f"Results/{args.sd}/analysis_CBvsNN_{args.m}_{cv:.2f}"
     if args.rID != "0": res_name += f"_{args.rID}"
     res_name += ".csv"
     res_DF.to_csv(res_name)
