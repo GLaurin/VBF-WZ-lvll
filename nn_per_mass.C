@@ -15,9 +15,9 @@
 using namespace std;
 
 // SUBDIRECTORIES TO EDIT
-string idir  = "GM_0716/";
-string tmass = "m300";
-string sdir  = idir+tmass;  
+string idir;
+string tmass;
+string sdir;
 
 string get_file_name(int mass) {
   
@@ -33,7 +33,6 @@ string get_file_name(int mass) {
   else if (mass==700) file_path="OutputRoot/"+sdir+"/new_GM_"+insert_str+"MVA.450773_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m700_ntuples.root";
   else if (mass==800) file_path="OutputRoot/"+sdir+"/new_GM_"+insert_str+"MVA.450774_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m800_ntuples.root";
   else if (mass==900) file_path="OutputRoot/"+sdir+"/new_GM_"+insert_str+"MVA.305035_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_900_qcd0_ntuples.root";
-  std::cout << " ------ SDIR : "<< file_path << " ------- " << endl;
   return file_path;
   
 }
@@ -149,7 +148,7 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
 void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=false) {
   idir = dir;
   tmass = name;
-  sdir  = idir+tmass;
+  sdir  = idir+'/'+tmass+'/';
 
   if      (varname == "pSignal"     ) title="NN output : "+tmass, proj_str=varname, nbins = 50, xmin =0, xmax = 1;
   else if (varname == "M_WZ"        ) title=varname, proj_str=varname, nbins = 50, xmin =0, xmax = 1500;
@@ -229,13 +228,12 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   gStyle->SetOptStat(0);
   legend->Draw();
 
-  string imagePath = "ControlPlots/"+idir+"/NN_output/"+varname.Data() + (tmass!="" ? "_"+tmass : "");
+  string imagePath = "ControlPlots/"+idir+"/NN_output/"+varname.Data() + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
 
   c1->SaveAs((imagePath+".png" ).data());
   c1->SaveAs((imagePath+".root").data());
 
   if (not (norm2yield and varname=="pSignal")) return;
-  return;
 
   auto c2 = new TCanvas("c2","title",800,600);
 
