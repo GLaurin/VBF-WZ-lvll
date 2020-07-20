@@ -243,6 +243,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if      (mass==0 ) continue;
 
     auto significance = get_significance_hist(hists[mass],hists[0],sf);
+    if (significance<0) significance=0;
     if (mass==200) significance->SetMaximum(significance->GetBinContent( significance->GetMaximumBin() )*2);//significance->SetMaximum(10);
 
     TString option="same hist";
