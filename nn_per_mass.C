@@ -146,14 +146,10 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
 
 }
 
-<<<<<<< HEAD
-void nn_per_mass(string name="",TString varname="pSignal",bool norm2yield=true) {
-=======
 void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=false) {
   idir = dir;
   tmass = name;
   sdir  = idir+tmass;
->>>>>>> upstream/master
 
   if      (varname == "pSignal"     ) title="NN output : "+tmass, proj_str=varname, nbins = 50, xmin =0, xmax = 1;
   else if (varname == "M_WZ"        ) title=varname, proj_str=varname, nbins = 50, xmin =0, xmax = 1500;
@@ -232,16 +228,11 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   gStyle->SetOptStat(0);
   legend->Draw();
-<<<<<<< HEAD
-//  c1->SaveAs("ControlPlots/"+idir+"/NN_output/"+varname+"_"+tmass+".png");
-//  c1->SaveAs("ControlPlots/"+idir+"/NN_output/"+varname+"_"+tmass+".root");
-=======
 
   string imagePath = "ControlPlots/"+idir+"/NN_output/"+varname.Data() + (tmass!="" ? "_"+tmass : "");
 
   c1->SaveAs((imagePath+".png" ).data());
   c1->SaveAs((imagePath+".root").data());
->>>>>>> upstream/master
 
   if (not (norm2yield and varname=="pSignal")) return;
   return;
