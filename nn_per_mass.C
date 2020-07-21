@@ -14,7 +14,6 @@
 #include <string>
 using namespace std;
 
-// SUBDIRECTORIES TO EDIT
 string idir;
 string tmass;
 string sdir;
@@ -215,7 +214,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   if (norm2yield) select_weight += "*WeightNormalized";
   else proj_option="norm"; //normalize to 1
 
-  vector<int> masses{0,250,300,400,500,600,700,800,900};
+  vector<int> masses{0,250,300,400,500,600,700,800};
 
   TCanvas* c1 = new TCanvas ("name", "title", 800, 600);
 
@@ -242,7 +241,8 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   }
 
-  if (varname=="pSignal" and norm2yield) gPad->SetLogy();
+  //if (varname=="pSignal" and norm2yield) gPad->SetLogy();
+  
 
   gStyle->SetOptStat(0);
   legend->Draw();
@@ -253,7 +253,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   c1->SaveAs((imagePath+".root").data());
 
   if (not (norm2yield and varname=="pSignal")) return;
-
+  
   auto c2 = new TCanvas("c2","title",800,600);
 
   float sf= 1;
@@ -262,7 +262,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if      (mass==0 ) continue;
 
     auto significance = get_significance_hist(hists[mass],hists[0],sf);
-    if (significance<0) significance=0;
     if (mass==200) significance->SetMaximum(significance->GetBinContent( significance->GetMaximumBin() )*2);//significance->SetMaximum(10);
 
     TString option="same hist";
@@ -272,6 +271,11 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     
   }
   legend->Draw();
+
+  string signPath = "ControlPlots/"+idir+"/NN_output/significance" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
+
+  c2->SaveAs((signPath+".png" ).data());
+  c2->SaveAs((signPath+".root").data());
 
   return;
  
