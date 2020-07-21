@@ -9,6 +9,8 @@
 #include <TCanvas.h>
 #include <TStyle.h>
 #include <TLegend.h>
+#include <TDirectory.h>
+#include <iostream>
 #include <unordered_map>
 #include <iostream>
 #include <string>
@@ -59,7 +61,7 @@ string get_file_name(int mass, string phys_model="GM") {
 int get_color(int mass) {
 
   int color = kBlack;
-  if      (mass==200) color=kGray+2;
+  if      (mass==250) color=kGray+2;
   else if (mass==300) color=kMagenta;
   else if (mass==400) color=kBlue; 
   else if (mass==500) color=kCyan+2;
@@ -91,8 +93,8 @@ TH1F* get_bkg_hist(TString phys_model="GM") {
   TChain* chain = new TChain("nominal");
   TString ins_str="main";
   //chain->Add("OutputRoot/new_GM_"+ins_str+"MVA.364253_Sherpa_222_NNPDF30NNLO_lllv_ntuples.root");
-  chain->Add("OutputRoot/"+sdir+"/new_"+phys_model+"_"+ins_str+"MVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root");
-  chain->Add("OutputRoot/"+sdir+"/new_"+phys_model+"_"+ins_str+"MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root");
+  chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root");
+  chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root");
 
   TH1F* hist = new TH1F("bkg",title,nbins,xmin,xmax);
   chain->Project(hist->GetName(),proj_str,select_weight,proj_option);
@@ -126,7 +128,7 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
 
 float AMS(float s, float b, bool debug=false) {
 
-  if (s<0 or b<0) return 0;
+  if (s<=0 or b<=0) return 0;
 
   float br = 0.00001;// #KM: systematic unc?
   float sigma=sqrt(b+br);
@@ -164,7 +166,7 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
 
 }
 
-void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=false, TString phys_model="GM") {
+void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM") {
   idir = dir;
   tmass = name;
   sdir  = idir+'/'+tmass+'/';
@@ -210,7 +212,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   // Jet2Phi // Jet2Y           // M_Z
   // Jet3Phi // Jet3Y           
 
-  select_weight = "(M_jj>100)&&abs(Weight)<10";
+  select_weight = "(M_jj>100&&abs(Weight)<10)";
   if (norm2yield) select_weight += "*WeightNormalized";
   else proj_option="norm"; //normalize to 1
 
@@ -262,7 +264,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if      (mass==0 ) continue;
 
     auto significance = get_significance_hist(hists[mass],hists[0],sf);
-    if (mass==200) significance->SetMaximum(significance->GetBinContent( significance->GetMaximumBin() )*2);//significance->SetMaximum(10);
+    if (mass<=250) significance->SetMaximum(significance->GetBinContent( significance->GetMaximumBin() )*2);//significance->SetMaximum(10);
 
     TString option="same hist";
     if (mass==1) option="hist";
