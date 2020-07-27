@@ -34,18 +34,24 @@ each of these are also drawn.
 //------------------------------------------------------------------------------
 
 //========================== PARAMETERS TO EDIT ================================
-string sdir   = "HVT_0717";       // Subdirectory containing the files and in which to save the figures
-string model  = "HVT";            // Model used
-string opt_ID = "_4g";    // Optional file name identification
+string sdir   = "GM_0716";       // Subdirectory containing the files and in which to save the figures
+string model  = "GM";            // Model used
+string opt_ID = "_4G";    // Optional file name identification
 //==============================================================================
 
-double AMS(int s, int b) {
-    // Approximate Median Significance
-    double b_r = 0.00001;
-    double A   = s+b+b_r;
-    double B   = 1+(s/(b+b_r));
-    double C   = 2*(A*log(B)-s);
-    return sqrt(C);
+float AMS(float s, float b, bool debug=false) {
+  if (s<=0 or b<=0) return 0;
+
+  float br = 0.00001;// #KM: systematic unc?
+  float sigma    = sqrt(b+br);
+  float n        = s+b+br;
+  float radicand = 2 *( n * log (n*(b+br+sigma)/(b*b+n*sigma+br))-b*b/sigma*log(1+sigma*(n-b)/(b*(b+br+sigma))));
+
+  float ams= 0;
+  if (radicand < 0) std::cout << "AMS: radicand is negative. Returning 0." << std::endl;
+  else ams = sqrt(radicand);
+
+  return ams;
 }
 
 int main() {
@@ -105,7 +111,7 @@ int main() {
         data->Draw("pSignal >> pSig","(WeightNormalized)","HIST");
         TH1F *hist = (TH1F*)gDirectory->Get("pSig");
         hist->SetTitle(Form("pSignal - mass %i",mass));
-//        gPad->SetLogy();
+        gPad->SetLogy();
 
        // Applying condtions to signal
         c1->cd(3);
@@ -113,7 +119,7 @@ int main() {
         data->Draw("pSignal >> pSig_f","(WeightNormalized)*(M_jj>500)*(Deta_jj>3.5)","HIST");
         TH1F *hist_f = (TH1F*)gDirectory->Get("pSig_f");
         hist_f->SetTitle("pSignal - cut-based");
-//        gPad->SetLogy();
+        gPad->SetLogy();
 
         // Reading the background files
         string bname1 = "new_" + model + "_mainMVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root";
@@ -275,8 +281,8 @@ int main() {
         legend2->Draw();
 
         // Saving the figure as .png and .root
-        string sfname1 = savedir + "pSig_integrals_m" + to_string(mass) + "_and_bckgrd" + opt_ID + ".png";
-        string sfname2 = savedir + "pSig_integrals_m" + to_string(mass) + "_and_bckgrd" + opt_ID + ".root";
+        string sfname1 = savedir + "pSig_integrals_"+model+"_m" + to_string(mass) + "_and_bckgrd" + opt_ID + ".png";
+        string sfname2 = savedir + "pSig_integrals_"+model+"_m" + to_string(mass) + "_and_bckgrd" + opt_ID + ".root";
         char const *sfname1_c = sfname1.c_str();
         char const *sfname2_c = sfname2.c_str();
     	c1->SaveAs(sfname1_c);

@@ -212,24 +212,57 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   // Jet2Phi // Jet2Y           // M_Z
   // Jet3Phi // Jet3Y           
 
-  select_weight = "(M_jj>100&&abs(Weight)<10)";
+  select_weight = "(M_jj>100 && abs(Weight)<10)";
   if (norm2yield) select_weight += "*WeightNormalized";
   else proj_option="norm"; //normalize to 1
 
   vector<int> masses{0,250,300,400,500,600,700,800};
+  int hms = masses.size()/2+1;
 
-  TCanvas* c1 = new TCanvas ("name", "title", 800, 600);
+  TCanvas* c1 = new TCanvas ("name", "title", 800, 400);
+  c1->Divide(2,1);
 
-  auto legend = new TLegend(0.7,0.65,0.9,0.9);
-  legend->SetHeader("Mass (GeV)","C"); 
-  legend->SetFillStyle(0); 
-  legend->SetLineWidth(0); 
-  legend->SetNColumns(2); 
+  c1->cd(1);
+  auto legend1 = new TLegend(0.7,0.65,0.9,0.9);
+  legend1->SetHeader("Mass (GeV)","C"); 
+  legend1->SetFillStyle(0); 
+  legend1->SetLineWidth(0); 
+  legend1->SetNColumns(2);
+
+  c1->cd(2);
+  auto legend2 = new TLegend(0.7,0.65,0.9,0.9);
+  legend2->SetHeader("Mass (GeV)","C"); 
+  legend2->SetFillStyle(0); 
+  legend2->SetLineWidth(0); 
+  legend2->SetNColumns(2);
 
   std::unordered_map<int,TH1F*> hists;
 
+  c1->cd(1); 
+  auto legend=legend1;
+
+  TH1F* hist;
+  char smass[3];
+
   for (auto mass : masses) {
-    TH1F* hist = get_hist(mass,phys_model.Data());
+
+    //Separating the curves on 2 figures
+    if (mass==masses[hms]) {
+      legend->Draw();    
+      gStyle->SetOptStat(0);
+      if (varname=="pSignal" and norm2yield) gPad->SetLogy();
+      c1->cd(2); 
+      legend=legend2; 
+    
+      //Plotting background on second figure
+      hist = get_hist(0,phys_model.Data());
+      TString option="hist";
+      hist->Draw(option);
+      sprintf(smass, "%s", "bkg");
+      legend->AddEntry(hist,smass,"f");
+    }
+
+    hist = get_hist(mass,phys_model.Data());
     hists[mass]=hist;
 
     TString option="same hist";
@@ -243,9 +276,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   }
 
-  //if (varname=="pSignal" and norm2yield) gPad->SetLogy();
-  
-
+  if (varname=="pSignal" and norm2yield) gPad->SetLogy();
   gStyle->SetOptStat(0);
   legend->Draw();
 
@@ -256,23 +287,36 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   if (not (norm2yield and varname=="pSignal")) return;
   
-  auto c2 = new TCanvas("c2","title",800,600);
+  auto c2 = new TCanvas("c2","title",800,400);
+  c2->Divide(2,1);
+  c2->cd(1);
 
   float sf= 1;
+  int ymax = 0;
+  int ymax_temp = 0;
 
   for (auto mass : masses) {
-    if      (mass==0 ) continue;
+    if (mass==0) continue;
+    if (mass==masses[hms]) {
+      legend1->Draw();
+      c2->cd(2);
+    }
 
     auto significance = get_significance_hist(hists[mass],hists[0],sf);
-    if (mass<=250) significance->SetMaximum(significance->GetBinContent( significance->GetMaximumBin() )*2);//significance->SetMaximum(10);
 
     TString option="same hist";
-    if (mass==1) option="hist";
+    if (mass==masses[1] || mass==hms) option="hist";
 
-    significance->Draw(option);
+    ymax_temp = significance->GetBinContent(significance->GetMaximumBin());
+    cout << "Mass : " << mass << endl;
+    cout << "Opt cut value : " << hist->GetXaxis()->GetBinCenter(significance->GetMaximumBin()) << endl;
+    cout << "--------------------" << endl;
+    if (ymax_temp>ymax) ymax = ymax_temp;
     
+    significance->Draw(option);
+    significance->GetYaxis()->SetRangeUser(0,ymax*1.2);
   }
-  legend->Draw();
+  legend2->Draw();
 
   string signPath = "ControlPlots/"+idir+"/NN_output/significance" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
 

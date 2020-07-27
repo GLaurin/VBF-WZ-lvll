@@ -110,7 +110,12 @@ if __name__ == '__main__':
     else: print("INFO: No mass_points argument was given. Using default mass switches in the config_OP_NN.py!")
 
     #Read data files
-    data_set,tmp_switches,transform=prepare_data(input_sample,args.model,args.Findex,args.nFold,arg_switches=tmp_switches)
+    mwin = False
+    mss  = 0
+    if len(args.mass_points)==1:
+        mwin=True
+        mss=int(args.mass_points[0])
+    data_set,tmp_switches,transform = prepare_data(input_sample, args.model, args.Findex, args.nFold, arg_switches=tmp_switches, mass_window=mwin, mass=mss)
 
     ar_switches = np.array(tmp_switches)
     ar_mass     = np.array(mass_list)
@@ -211,8 +216,8 @@ if __name__ == '__main__':
     if len(args.mass_points)>1: args.mass_points.append(-1)
     for mass in reversed(args.mass_points):
         print ("\nEvaluating significance curve at mass: {}".format(mass))
-        highsig,cut_value = calc_sig_new(data_set, prob_predict_train_NN[:,0], prob_predict_valid_NN[:,0], '{0}_NN{1}_F{2}o{3}'.format(args.model,args.output,args.Findex,args.nFold),sub_dir_cp,args.mass_points,mass=mass)
-    
+        highsig_wa,cut_value_wa = calc_sig_new(data_set, prob_predict_train_NN[:,0], prob_predict_valid_NN[:,0], '{0}_NN{1}_F{2}o{3}'.format(args.model,args.output,args.Findex,args.nFold),sub_dir_cp,args.mass_points,mass=mass, apply_mass_window=True)
+        highsig,cut_value = calc_sig_new(data_set, prob_predict_train_NN[:,0], prob_predict_valid_NN[:,0], '{0}_NN{1}_F{2}o{3}'.format(args.model,args.output,args.Findex,args.nFold),sub_dir_cp,args.mass_points,mass=mass, apply_mass_window=False)
     # Draw figures
     drawfigure(model,prob_predict_train_NN,data_set,data_set.X_valid.values,nameadd,cut_value,args.Findex,args.nFold,sub_dir_cp)
 

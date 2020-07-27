@@ -84,10 +84,11 @@ def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=T
     return data, X
 
 
-def read_data(filename):
+def read_data(filename,mass_window=False, mass=0):
     root = ROOT.TFile(filename)
     tree = root.Get('nominal')
     cuts='Jet1Pt>0&&Jet2Pt>0&&M_jj>100.&&abs(Weight)<10'
+    if mass_window: cuts += f" && M_WZ>({mass}*0.88) && M_WZ<({mass}*1.12)"
     #KM: now the folding division is applied in the dataset class below
     #if nFold>1: cuts+='&&EventNumber%{0}!={1}'.format(nFold,Findex)
     #print('Applying cuts=',cuts)
@@ -168,7 +169,7 @@ def get_mass_label(mWZ):
 
     return mass_labels
         
-def prepare_data(input_samples,model,Findex,nFold,arg_switches=list()):
+def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_window=False, mass=0):
     #Read background and signal files and save them as panda data frames
 
     #Names of bck samples
@@ -179,7 +180,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list()):
     bg = None
     print('\nRead Background Samples')
     for i in range(len(namesbkg)):
-        sample = read_data(input_samples.filedir+namesbkg[i])
+        sample = read_data(input_samples.filedir+namesbkg[i], mass_window, mass)
         print(namesbkg[i])
         #sample['Weight']=sample['Weight']*input_samples.lumi*xsbkg[i]/neventsbkg[i] #KM: This is done in WeightNormalized
         if bg is None:
@@ -460,7 +461,9 @@ def calc_sig_new(data_set, prob_predict_train, prob_predict_valid, file_string, 
     plt.plot(graph_points_tr_x,graph_points_va_y, label='valid')
     plt.legend()
 
-    output_file = sub_dir+'/significance_'+file_string+"_m{}".format(mass)+'.png'
+    if apply_mass_window: omw = '_wa'
+    else: omw = ''
+    output_file = sub_dir+'/significance_'+file_string+"_m{}".format(mass)+omw+'.png'
     print("Saving sinificance plot: ",output_file)
 
     plt.savefig(output_file)

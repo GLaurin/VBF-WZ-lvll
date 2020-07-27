@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--m",  "--model",     help="Model to use",                     default="GM", type=str)
 parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",   type=str)
 parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
-parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), abs(WN) (1), or Weight*xs/nevents (2)", default=0, type=int)
+parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), abs(WN) (1), or else (2)", default=0, type=int)
 args = parser.parse_args()
 
 #-------------------------------------------------------------------------------
@@ -103,15 +103,6 @@ def getCV():
             cv += temp
     return cv/4
 
-def AMS_2(n_sig, n_bkg, br=0.00001):
-    """ 
-    Approximate Median Significance
-    """
-    A = n_sig + n_bkg + br
-    B = math.log(1+n_sig/(n_bkg+br))
-    C = 2*(A*B - n_sig)
-    
-    return math.sqrt(C)
 
 def AMS(s, b):
     """ Approximate Median Significance """
@@ -135,7 +126,7 @@ def bkgEvents(cins, mass, ucut=0, uwei=0):
     uwei - method of normalizing weight
     """
 
-    bkg = np.array([0,0])    # Number of events for QCD and EW
+    bkg = np.array([0.,0.])    # Number of events for QCD and EW
 
     for i in range(len(cins.bckgr['name'])):
         # Accessing the data
@@ -153,7 +144,7 @@ def bkgEvents(cins, mass, ucut=0, uwei=0):
         # Calculating the number of events
         if   uwei==0: bkg[i] = sum(bkg_DF['WeightNormalized'])
         elif uwei==1: bkg[i] = sum(abs(bkg_DF['WeightNormalized']))
-        elif uwei==2: bkg[i] = sum(abs(bkg_DF['Weight'])*cins.bckgr['xs'][i]*140/cins.bckgr['nevents'][i])
+        elif uwei==2: bkg[i] = sum(bkg_DF['WeightNormalized'])
 
     return sum(bkg), bkg[0], bkg[1]
 
@@ -182,24 +173,21 @@ def sigEvents(cins, mass, model, ucut=0, uwei=0):
     else: cut = "M_jj>500 && Deta_jj>3.5"
 
     # Selecting the data
-    cuts = 'Jet1Pt>0 && Jet2Pt>0 && M_WZ>({0}*0.88) && M_WZ<({0}*1.12) && {1}'.format(mass, cut)
+    cuts = 'M_jj>100 && M_WZ>({0}*0.88) && M_WZ<({0}*1.12) && {1}'.format(mass, cut)
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
     # Calculating the number of events
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
     if   uwei==0: sig_nEv = sum(sig_DF['WeightNormalized'])
     elif uwei==1: sig_nEv = sum(abs(sig_DF['WeightNormalized']))
-    elif uwei==2: sig_nEv = sum(abs(sig_DF['Weight'])*sigMO['xs'][isf]*140/sigMO['nevents'][isf]*sigMO['filtEff'][isf])
-
+    elif uwei==2: sig_nEv = sum((abs(sig_DF['Weight'])<10)*sig_DF['WeightNormalized'])
     return sig_nEv
 
 #-------------------------------------------------------------------------------
 
 # Initializing arrays
-res_arr  = np.zeros((16,4))
-mass_arr = np.arange(200,901,100)
-if args.m == "HVT":
-    mass_arr += 100
+res_arr  = np.zeros((14,5))
+mass_arr = np.array([250,300,400,500,600,700,800])
 
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
@@ -207,8 +195,13 @@ cins_CB = conf.input_samples
 cv = getCV()
 print(f"Mean cut value : {cv}")
 
+# Optimal cut values for each mass at tmass 250
+ocv_250 = [0.47, 0.77, 0.97, 0.97, 0.97, 0.97, 0.97]
+ocv_600 = [0.91, 0.91, 0.91, 0.97, 0.93, 0.97, 0.97]
+
 for c in range(len(mass_arr)):
     mass = mass_arr[c]
+    cv = ocv_600[c]
 
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
@@ -221,32 +214,36 @@ for c in range(len(mass_arr)):
     # Printing number of events
     print(f"\nMass : {mass} \t Cut-based \t NN")
     print(   "Signal        \t {:.2f}    \t {:.2f}\
-            \nQCD           \t {}        \t {}\
-            \nEW            \t {}        \t {}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW))
+            \nQCD           \t {:.2f}    \t {:.2f}\
+            \nEW            \t {:.2f}    \t {:.2f}\
+            \nCV            \t           \t {:.2f}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW,cv))
     
     # Calculating and printing significance
-    ams = NN_ams = None
-    if n_bkg>=0 and n_sig>=0:
-        ams = "{:.2f}".format(AMS(n_sig, n_bkg))
-    if NN_bkg>=0 and NN_sig>=0:
-        NN_ams = "{:.2f}".format(AMS(NN_sig, NN_bkg))
+    ams = 0.
+    NN_ams = 0.
+    if np.isfinite(n_bkg):
+        if n_bkg>0 and n_sig>0:
+            ams = "{:.2f}".format(AMS(n_sig, n_bkg))
+    if np.isfinite(NN_bkg):
+        if NN_bkg>0 and NN_sig>0:
+            NN_ams = "{:.2f}".format(AMS(NN_sig, NN_bkg))
     print(f"Significance \t {ams}     \t {NN_ams}")    
 
     # Updating results' array
-    res_arr[c*2] = n_sig, QCD, EW, ams
-    res_arr[c*2+1] = NN_sig, NN_QCD, NN_EW, NN_ams
+    res_arr[c*2] = None, n_sig, QCD, EW, ams
+    res_arr[c*2+1] = cv, NN_sig, NN_QCD, NN_EW, NN_ams
 
 if args.rID != "0":
     # Creating a DataFrame of the results
     mass_rl = [m for m in mass_arr for _ in (0,1)]
-    cols_rl = ["Cut-based","NN"]*8
-    indx_rl = ["Signal","QCD","EW","Significance"]
+    cols_rl = ["Cut-based","NN"]*7
+    indx_rl = ["Cut value","Signal","QCD","EW","Significance"]
     pd.options.display.float_format = '{:.2f}'.format
     res_DF  = pd.DataFrame(res_arr.T, columns=pd.MultiIndex.from_tuples(list(zip(mass_rl,cols_rl))),index=indx_rl)
 
     # Saving the results
     Path(f"Results/{args.sd}").mkdir(parents=True, exist_ok=True)
-    res_name = f"Results/{args.sd}/analysis_CBvsNN_{args.m}_{cv:.2f}"
+    res_name = f"Results/{args.sd}/analysis_CBvsNN_{args.m}_cv{cv:.2f}"
     if args.rID != "0": res_name += f"_{args.rID}"
     res_name += ".csv"
     res_DF.to_csv(res_name)
