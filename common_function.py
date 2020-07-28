@@ -37,7 +37,7 @@ def AMS(s, b):
     return significance
 
 def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=True,debug=False):
-    data = read_data(filepath)
+    data = read_data(filepath,isApplication=True)
 
     nFold=len(tr_files)
 
@@ -84,11 +84,17 @@ def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=T
     return data, X
 
 
-def read_data(filename,mass_window=False, mass=0):
+def read_data(filename,mass_window=False, mass=0,isSignal=False,isApplication=False):
     root = ROOT.TFile(filename)
     tree = root.Get('nominal')
-    cuts='Jet1Pt>0&&Jet2Pt>0&&M_jj>100.&&abs(Weight)<10'
-    if mass_window: cuts += f" && M_WZ>({mass}*0.6) && M_WZ<({mass}*1.4)"
+    cuts=''
+    if not(isApplication):
+        cuts='Jet1Pt>0&&Jet2Pt>0&&M_jj>100.'
+        if isSignal: cuts+='&&abs(Weight)<10'
+        if mass_window: cuts += f" && M_WZ>({mass}*0.6) && M_WZ<({mass}*1.4)"
+        pass
+    #else: no cut when applying
+
     #KM: now the folding division is applied in the dataset class below
     #if nFold>1: cuts+='&&EventNumber%{0}!={1}'.format(nFold,Findex)
     #print('Applying cuts=',cuts)
@@ -180,7 +186,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     bg = None
     print('\nRead Background Samples')
     for i in range(len(namesbkg)):
-        sample = read_data(input_samples.filedir+namesbkg[i], mass_window, mass)
+        sample = read_data(input_samples.filedir+namesbkg[i], mass_window=mass_window, mass=mass, isSignal=False)
         print(namesbkg[i])
         #sample['Weight']=sample['Weight']*input_samples.lumi*xsbkg[i]/neventsbkg[i] #KM: This is done in WeightNormalized
         if bg is None:
@@ -227,7 +233,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     prob = np.empty(len(namessig))
     print('\nRead Signal Samples')
     for i in range(len(namessig)):
-        sample = read_data(input_samples.filedirsig+namessig[i])
+        sample = read_data(input_samples.filedirsig+namessig[i],isSignal=True)
         #sample['Weight']=sample['Weight']*input_samples.lumi*xssig[i]/neventssig[i]  #KM: This is done in WeightNormalized
         sample['LabelMass'] = get_mass_label(sample['M_WZ']) #sample['LabelMass'] = i
         print(namessig[i],"\tLabelMass=",i)
@@ -439,8 +445,8 @@ def calc_sig_new(data_set, prob_predict_train, prob_predict_valid, file_string, 
         significance_tr=0
         significance_va=0
 
-        if Nsig_tr>0 and Nbkg_tr>0:significance_tr= AMS(Nsig_tr*nFold ,Nbkg_tr*nFold)
-        if Nsig_va>0 and Nbkg_va>0:significance_va= AMS(Nsig_va*nFold ,Nbkg_va*nFold)
+        if Nsig_tr>0 and Nbkg_tr>0:significance_tr= AMS(Nsig_tr, Nbkg_tr)# AMS(Nsig_tr*nFold ,Nbkg_tr*nFold)
+        if Nsig_va>0 and Nbkg_va>0:significance_va= AMS(Nsig_va, Nbkg_va)# AMS(Nsig_va*nFold ,Nbkg_va*nFold)
 
         if debug:
             print("Bin#\t",i)
