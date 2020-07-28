@@ -88,7 +88,7 @@ def read_data(filename,mass_window=False, mass=0):
     root = ROOT.TFile(filename)
     tree = root.Get('nominal')
     cuts='Jet1Pt>0&&Jet2Pt>0&&M_jj>100.&&abs(Weight)<10'
-    if mass_window: cuts += f" && M_WZ>({mass}*0.88) && M_WZ<({mass}*1.12)"
+    if mass_window: cuts += f" && M_WZ>({mass}*0.6) && M_WZ<({mass}*1.4)"
     #KM: now the folding division is applied in the dataset class below
     #if nFold>1: cuts+='&&EventNumber%{0}!={1}'.format(nFold,Findex)
     #print('Applying cuts=',cuts)
@@ -170,7 +170,7 @@ def get_mass_label(mWZ):
     return mass_labels
         
 def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_window=False, mass=0):
-    #Read background and signal files and save them as panda data frames
+    """Read background and signal files and save them as panda data frames"""
 
     #Names of bck samples
     namesbkg = input_samples.bckgr["name"]

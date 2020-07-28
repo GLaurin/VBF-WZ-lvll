@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <string>
+#include <fstream>
 using namespace std;
 
 string idir;
@@ -217,7 +218,8 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   else proj_option="norm"; //normalize to 1
 
   vector<int> masses{0,250,300,400,500,600,700,800};
-  int hms = masses.size()/2+1;
+  int      hms = masses.size()/2+1;
+  const int ms = masses.size();
 
   TCanvas* c1 = new TCanvas ("name", "title", 800, 400);
   c1->Divide(2,1);
@@ -294,8 +296,12 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   float sf= 1;
   int ymax = 0;
   int ymax_temp = 0;
+  string opt_cv[ms];
+  ofstream ocv_file;
+  ocv_file.open ("ControlPlots/"+idir+"/NN_output/ocv"+(idir!="" ? "_"+idir : "")+(tmass!="" ? "_"+tmass : "")+".txt");
 
-  for (auto mass : masses) {
+  for (int i=0; i<ms; i++) {
+    auto mass = masses[i];
     if (mass==0) continue;
     if (mass==masses[hms]) {
       legend1->Draw();
@@ -308,14 +314,20 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if (mass==masses[1] || mass==hms) option="hist";
 
     ymax_temp = significance->GetBinContent(significance->GetMaximumBin());
-    cout << "Mass : " << mass << endl;
-    cout << "Opt cut value : " << hist->GetXaxis()->GetBinCenter(significance->GetMaximumBin()) << endl;
-    cout << "--------------------" << endl;
     if (ymax_temp>ymax) ymax = ymax_temp;
+
+    opt_cv[i] = to_string(hist->GetXaxis()->GetBinCenter(significance->GetMaximumBin()));
+    opt_cv[i] = opt_cv[i].substr(0,4);
+    cout << "Mass : " << mass << endl;
+    cout << "Opt cut value : " << opt_cv[i] << endl;
+    cout << "--------------------" << endl;
+    ocv_file << mass << ", " << opt_cv[i] << endl;
     
     significance->Draw(option);
     significance->GetYaxis()->SetRangeUser(0,ymax*1.2);
   }
+  ocv_file.close();
+
   legend2->Draw();
 
   string signPath = "ControlPlots/"+idir+"/NN_output/significance" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");

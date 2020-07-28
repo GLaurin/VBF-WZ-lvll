@@ -33,10 +33,11 @@ import os
 #===============================================================================
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--m",  "--model",     help="Model to use",                     default="GM", type=str)
-parser.add_argument("--sd", "--subdir",    help="Subdirectory in OutputRoot",       default="",   type=str)
+parser.add_argument("--m", "--model", help="Model to use", default="GM", type=str)
+parser.add_argument("--sd", "--subdir", help="Subdirectory in OutputRoot", default="", type=str)
 parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
-parser.add_argument("--w",  "--weight",    help="WeightNormalized (0), abs(WN) (1), or else (2)", default=0, type=int)
+parser.add_argument("--w", "--weight", help="WeightNormalized (0), abs(WN) (1), or else (2)", default=2, type=int)
+parser.add_argument("--ocv", help="Optimal cut values' file for each mass independately", default="0", type=str)
 args = parser.parse_args()
 
 #-------------------------------------------------------------------------------
@@ -192,16 +193,17 @@ mass_arr = np.array([250,300,400,500,600,700,800])
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
 
-cv = getCV()
-print(f"Mean cut value : {cv}")
-
-# Optimal cut values for each mass at tmass 250
-ocv_250 = [0.47, 0.77, 0.97, 0.97, 0.97, 0.97, 0.97]
-ocv_600 = [0.91, 0.91, 0.91, 0.97, 0.93, 0.97, 0.97]
+if args.ocv != "0":
+    ocv_file = np.loadtxt(args.ocv, delimiter=', ')
+    mass_arr = ocv_file[:,0]
+    cv_arr  = ocv_file[:,1]
+else:
+    cv_arr = np.full(mass_arr.size, getCV())
+    print(f"Mean cut value : {cv_arr[0]}")
 
 for c in range(len(mass_arr)):
-    mass = mass_arr[c]
-    cv = ocv_600[c]
+    mass = int(mass_arr[c])
+    cv = cv_arr[c]
 
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
@@ -212,11 +214,12 @@ for c in range(len(mass_arr)):
     NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{cv}", args.w)
 
     # Printing number of events
-    print(f"\nMass : {mass} \t Cut-based \t NN")
+    print(f"\n---- Mass : {mass} ------------------------\
+            \nCut value : {cv:.2f}")
+    print(   "              \t Cut-based \t NN")
     print(   "Signal        \t {:.2f}    \t {:.2f}\
             \nQCD           \t {:.2f}    \t {:.2f}\
-            \nEW            \t {:.2f}    \t {:.2f}\
-            \nCV            \t           \t {:.2f}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW,cv))
+            \nEW            \t {:.2f}    \t {:.2f}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW))
     
     # Calculating and printing significance
     ams = 0.
@@ -243,7 +246,7 @@ if args.rID != "0":
 
     # Saving the results
     Path(f"Results/{args.sd}").mkdir(parents=True, exist_ok=True)
-    res_name = f"Results/{args.sd}/analysis_CBvsNN_{args.m}_cv{cv:.2f}"
+    res_name = f"Results/{args.sd}/analysis_CBvsNN_{args.m}"
     if args.rID != "0": res_name += f"_{args.rID}"
     res_name += ".csv"
     res_DF.to_csv(res_name)
