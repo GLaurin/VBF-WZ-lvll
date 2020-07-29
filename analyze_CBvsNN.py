@@ -37,7 +37,8 @@ parser.add_argument("--m", "--model", help="Model to use", default="GM", type=st
 parser.add_argument("--sd", "--subdir", help="Subdirectory in OutputRoot", default="", type=str)
 parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
 parser.add_argument("--w", "--weight", help="WeightNormalized (0), abs(WN) (1), or else (2)", default=2, type=int)
-parser.add_argument("--ocv", help="Optimal cut values' file for each mass independately", default="0", type=str)
+parser.add_argument("--mass", help="mass at which the training has been done", type=int)
+parser.add_argument("--ocv", help="Using optimal cut values", default=0, type=bool)
 args = parser.parse_args()
 
 #-------------------------------------------------------------------------------
@@ -193,18 +194,46 @@ mass_arr = np.array([250,300,400,500,600,700,800])
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
 
-if args.ocv != "0":
-    ocv_file = np.loadtxt(args.ocv, delimiter=', ')
-    mass_arr = ocv_file[:,0]
-    cv_arr  = ocv_file[:,1]
-else:
-    cv_arr = np.full(mass_arr.size, getCV())
-    print(f"Mean cut value : {cv_arr[0]}")
+if not args.ocv:
+    ncv = 25
+    cvB = np.zeros(ncv)
+    cvS = np.zeros(ncv)
+    cvAMS = np.zeros(ncv)
+    for i in range(ncv):
+        dots = "."*(10*i//ncv)
+        print("Calculating optmial cut value...", end='')
+        print(dots+f"({i}/{ncv})", end='\r')
+        icv = i/(ncv)
+        cvB[i],cvQ,cvE = bkgEvents(getSamples(args.mass), args.mass, f"pSignal>{icv}", args.w)
+        cvS[i]         = sigEvents(getSamples(args.mass), args.mass, args.m, f"pSignal>{icv}", args.w)
+        if cvB[i]>0 and cvS[i]>0:
+            cvAMS[i]   = AMS(cvS[i], cvB[i])
+    cv = np.argmax(cvAMS)/(ncv)
+    print(f"Optimal cut value : {cv}                         \n")
+
+else: print("\nUsing optimal cut values for each mass")
 
 for c in range(len(mass_arr)):
     mass = int(mass_arr[c])
-    cv = cv_arr[c]
+    print(f"\n---- Mass : {mass} ------------------------")
 
+    if args.ocv:
+        ncv = 25
+        cvB = np.zeros(ncv)
+        cvS = np.zeros(ncv)
+        cvAMS = np.zeros(ncv)
+        for i in range(ncv):
+            dots = "."*(10*i//ncv)
+            print("Calculating optmial cut value...", end='')
+            print(dots+f"({i}/{ncv})", end='\r')
+            icv = i/(ncv)
+            cvB[i],cvQ,cvE = bkgEvents(getSamples(mass), mass, f"pSignal>{icv}", args.w)
+            cvS[i]         = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{icv}", args.w)
+            if cvB[i]>0 and cvS[i]>0:
+                cvAMS[i]   = AMS(cvS[i], cvB[i])
+        cv = np.argmax(cvAMS)/(ncv)
+        print("                                       \n")
+    
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
     n_sig = sigEvents(cins_CB, mass, args.m, uwei=args.w)
@@ -214,8 +243,7 @@ for c in range(len(mass_arr)):
     NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{cv}", args.w)
 
     # Printing number of events
-    print(f"\n---- Mass : {mass} ------------------------\
-            \nCut value : {cv:.2f}")
+    print(f"Cut value : {cv:.2f}")
     print(   "              \t Cut-based \t NN")
     print(   "Signal        \t {:.2f}    \t {:.2f}\
             \nQCD           \t {:.2f}    \t {:.2f}\
@@ -230,7 +258,7 @@ for c in range(len(mass_arr)):
     if np.isfinite(NN_bkg):
         if NN_bkg>0 and NN_sig>0:
             NN_ams = "{:.2f}".format(AMS(NN_sig, NN_bkg))
-    print(f"Significance \t {ams}     \t {NN_ams}")    
+    print(f"Significance \t {ams}     \t {NN_ams}")
 
     # Updating results' array
     res_arr[c*2] = None, n_sig, QCD, EW, ams
