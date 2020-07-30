@@ -252,8 +252,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   char smass[3];
 
   for (auto mass : masses) {
-    select_weight = Form("(M_jj<(%i*1.4))*(M_jj>(%i*0.6))",mass,mass);
-    if (norm2yield) select_weight += "*WeightNormalized";
+
     //Separating the curves on 2 figures
     if (mass==masses[hms]) {
       legend->Draw();    
@@ -263,12 +262,18 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       legend=legend2; 
     
       //Plotting background on second figure
+      select_weight = "(M_jj>100)";
+      if (norm2yield) select_weight += "*WeightNormalized";
       hist = get_hist(0,phys_model.Data());
       TString option="hist";
       hist->Draw(option);
       sprintf(smass, "%s", "bkg");
       legend->AddEntry(hist,smass,"f");
     }
+
+    select_weight = "(M_jj>100)";
+    if (mass != 0) select_weight = Form("(M_jj>100)*(M_WZ<(%i*1.4))*(M_WZ>(%i*0.6))",mass,mass);
+    if (norm2yield) select_weight += "*WeightNormalized";
 
     hist = get_hist(mass,phys_model.Data());
     hists[mass]=hist;
@@ -305,9 +310,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   string opt_cv[ms];
   ofstream ocv_file;
   ocv_file.open ("ControlPlots/"+idir+"/NN_output/ocv"+(idir!="" ? "_"+idir : "")+(tmass!="" ? "_"+tmass : "")+".txt");
-
-  select_weight = "(M_jj>100)";
-  if (norm2yield) select_weight += "*WeightNormalized";
 
   for (int i=0; i<ms; i++) {
     auto mass = masses[i];

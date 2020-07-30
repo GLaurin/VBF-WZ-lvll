@@ -25,9 +25,7 @@ import os
 #===============================================================================
 #-------------------------------------------------------------------------------
 #
-# Shows the number of events of EW and QCD background as well as the individual
-# mass' number of events, within mass window and cut-based. 
-# Calculates the significance before the training.
+# Comparison between NN output and Cut-based.
 #
 #-------------------------------------------------------------------------------
 #===============================================================================
@@ -188,8 +186,8 @@ def sigEvents(cins, mass, model, ucut=0, uwei=0):
 #-------------------------------------------------------------------------------
 
 # Initializing arrays
-res_arr  = np.zeros((14,5))
-mass_arr = np.array([250,300,400,500,600,700,800])
+mass_arr = np.array([250,300,400,500,700,800])
+res_arr  = np.zeros((len(mass_arr)*2,5))
 
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
@@ -234,7 +232,7 @@ for c in range(len(mass_arr)):
             if cvB[i]>0 and cvS[i]>0:
                 cvAMS[i]   = AMS(cvS[i], cvB[i])
         cv = np.argmax(cvAMS)/(ncv)
-        print("                                       \n")
+        print("                                                 ")
     
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
