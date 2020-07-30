@@ -171,7 +171,7 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
 
 }
 
-void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=false, TString phys_model="GM") {
+void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM") {
 
   if (norm2yield) mfac=20;
 
@@ -220,8 +220,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   // Jet2Phi // Jet2Y           // M_Z
   // Jet3Phi // Jet3Y           
 
-  select_weight = "(M_jj>100)";
-  if (norm2yield) select_weight += "*WeightNormalized";
   else proj_option="norm"; //normalize to 1
 
   vector<int> masses{0,250,300,400,500,700,800};
@@ -254,7 +252,8 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   char smass[3];
 
   for (auto mass : masses) {
-
+    select_weight = Form("(M_jj<(%i*1.4))*(M_jj>(%i*0.6))",mass,mass);
+    if (norm2yield) select_weight += "*WeightNormalized";
     //Separating the curves on 2 figures
     if (mass==masses[hms]) {
       legend->Draw();    
@@ -289,7 +288,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   gStyle->SetOptStat(0);
   legend->Draw();
 
-  string imagePath = "ControlPlots/"+idir+"/"+varname.Data() + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
+  string imagePath = "ControlPlots/"+idir+"/NN_output/"+varname.Data() + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
 
   c1->SaveAs((imagePath+".png" ).data());
   c1->SaveAs((imagePath+".root").data());
@@ -307,8 +306,12 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   ofstream ocv_file;
   ocv_file.open ("ControlPlots/"+idir+"/NN_output/ocv"+(idir!="" ? "_"+idir : "")+(tmass!="" ? "_"+tmass : "")+".txt");
 
+  select_weight = "(M_jj>100)";
+  if (norm2yield) select_weight += "*WeightNormalized";
+
   for (int i=0; i<ms; i++) {
     auto mass = masses[i];
+
     if (mass==0) continue;
     if (mass==masses[hms]) {
       legend1->Draw();
@@ -341,11 +344,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   c2->SaveAs((signPath+".png" ).data());
   c2->SaveAs((signPath+".root").data());
-
-  imagePath = "ControlPlots/"+idir+"/significance" + (tmass!="" ? "_"+tmass : "");
-
-  c2->SaveAs((imagePath+".png" ).data());
-  c2->SaveAs((imagePath+".root").data());
 
   return;
  

@@ -140,7 +140,7 @@ def bkgEvents(cins, mass, ucut=0, uwei=0):
         else: cut = "M_jj>500 && Deta_jj>3.5"
 
         # Selecting the data
-        cuts = 'Jet1Pt>0 && Jet2Pt>0 && M_WZ>({0}*0.88) && M_WZ<({0}*1.12) && {1}'.format(mass, cut)
+        cuts = 'Jet1Pt>0 && Jet2Pt>0 && M_WZ>({0}*0.6) && M_WZ<({0}*1.4) && {1}'.format(mass, cut)
         bkg_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
         # Calculating the number of events
@@ -175,7 +175,7 @@ def sigEvents(cins, mass, model, ucut=0, uwei=0):
     else: cut = "M_jj>500 && Deta_jj>3.5"
 
     # Selecting the data
-    cuts = 'M_jj>100 && M_WZ>({0}*0.88) && M_WZ<({0}*1.12) && {1}'.format(mass, cut)
+    cuts = 'M_jj>100 && M_WZ>({0}*0.6) && M_WZ<({0}*1.4) && {1}'.format(mass, cut)
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
     # Calculating the number of events
@@ -194,6 +194,7 @@ mass_arr = np.array([250,300,400,500,600,700,800])
 # Input samples for cut-based analysis
 cins_CB = conf.input_samples
 
+# Calculating the optimal cut value for the training mass
 if not args.ocv:
     ncv = 25
     cvB = np.zeros(ncv)
@@ -217,6 +218,7 @@ for c in range(len(mass_arr)):
     mass = int(mass_arr[c])
     print(f"\n---- Mass : {mass} ------------------------")
 
+    # Calculating the optimal cut value for the current mass
     if args.ocv:
         ncv = 25
         cvB = np.zeros(ncv)
