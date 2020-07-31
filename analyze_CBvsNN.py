@@ -41,7 +41,7 @@ args = parser.parse_args()
 
 #-------------------------------------------------------------------------------
 
-def getSamples(mass):
+def getSamples():
     """
     Similar to config_OPT_NN.input_samples, except this class uses the output
     of a training for an individual mass
@@ -111,7 +111,9 @@ def AMS(s, b):
     sigma = math.sqrt(b+br)
     n = s+b+br
     radicand = 2 *( n * math.log (n*(b+br+sigma)/(b**2+n*sigma+br))-b**2/sigma*math.log(1+sigma*(n-b)/(b*(b+br+sigma))))
-    significance = math.sqrt(radicand)
+    if radicand>0:
+        significance = math.sqrt(radicand)
+    else: significance = 0
     
     return significance
 
@@ -138,7 +140,7 @@ def bkgEvents(cins, mass, ucut=0, uwei=0):
         else: cut = "M_jj>500 && Deta_jj>3.5"
 
         # Selecting the data
-        cuts = 'Jet1Pt>0 && Jet2Pt>0 && M_WZ>({0}*0.6) && M_WZ<({0}*1.4) && {1}'.format(mass, cut)
+        cuts = 'M_jj>100 && M_WZ>({0}*0.6) && M_WZ<({0}*1.4) && {1}'.format(mass, cut)
         bkg_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
         # Calculating the number of events
@@ -203,10 +205,11 @@ if not args.ocv:
         print("Calculating optmial cut value...", end='')
         print(dots+f"({i}/{ncv})", end='\r')
         icv = i/(ncv)
-        cvB[i],cvQ,cvE = bkgEvents(getSamples(args.mass), args.mass, f"pSignal>{icv}", args.w)
-        cvS[i]         = sigEvents(getSamples(args.mass), args.mass, args.m, f"pSignal>{icv}", args.w)
+        cvB[i],cvQ,cvE = bkgEvents(getSamples(), args.mass, f"pSignal>{icv}", args.w)
+        cvS[i]         = sigEvents(getSamples(), args.mass, args.m, f"pSignal>{icv}", args.w)
         if cvB[i]>0 and cvS[i]>0:
             cvAMS[i]   = AMS(cvS[i], cvB[i])
+        print(cvAMS[i])
     cv = np.argmax(cvAMS)/(ncv)
     print(f"Optimal cut value : {cv}                         \n")
 
@@ -232,15 +235,15 @@ for c in range(len(mass_arr)):
             if cvB[i]>0 and cvS[i]>0:
                 cvAMS[i]   = AMS(cvS[i], cvB[i])
         cv = np.argmax(cvAMS)/(ncv)
-        print("                                                 ")
+        print("                                                 ",end="\r")
     
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
     n_sig = sigEvents(cins_CB, mass, args.m, uwei=args.w)
 
     # Number of events for NN analysis
-    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(mass), mass, f"pSignal>{cv}", args.w)
-    NN_sig = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{cv}", args.w)
+    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(), mass, f"pSignal>{cv}", args.w)
+    NN_sig = sigEvents(getSamples(), mass, args.m, f"pSignal>{cv}", args.w)
 
     # Printing number of events
     print(f"Cut value : {cv:.2f}")

@@ -2,6 +2,7 @@
 #include <TFile.h>
 #include <TMath.h>
 #include <TTree.h>
+#include <TLine.h>
 #include <TColor.h>
 #include <TH1F.h>
 #include <TROOT.h>
@@ -118,7 +119,7 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
     //std::cout<<histName<<std::endl;
 
     hist = new TH1F(histName ,title,nbins,xmin,xmax);
-    select_weight+="*(abs(Weight)<10)";
+    select_weight += "*(abs(Weight)<10)";
     t->Project(hist->GetName(),proj_str,select_weight,proj_option);
   }
   else hist = get_bkg_hist(phys_model.Data());
@@ -171,7 +172,7 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
 
 }
 
-void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM") {
+void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM", bool drawCB=true) {
 
   if (norm2yield) mfac=20;
 
@@ -244,6 +245,9 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   legend2->SetNColumns(2);
 
   std::unordered_map<int,TH1F*> hists;
+  std::unordered_map<int,TH1F*> hists_bkg;
+  std::unordered_map<int,TH1F*> hists_bkg_cb;
+  std::unordered_map<int,TH1F*> hists_cb;
 
   c1->cd(1); 
   auto legend=legend1;
@@ -275,12 +279,21 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if (mass != 0) select_weight = Form("(M_jj>100)*(M_WZ<(%i*1.4))*(M_WZ>(%i*0.6))",mass,mass);
     if (norm2yield) select_weight += "*WeightNormalized";
 
+    // Current mass histogram
     hist = get_hist(mass,phys_model.Data());
     hists[mass]=hist;
+    // Background histogram
+    hists_bkg[mass]=get_hist(0,phys_model.Data());
+    // Cut-based selection histogram
+    select_weight += "*(M_jj>500)*(Deta_jj>3.5)";
+    cout << select_weight << endl;
+    hists_bkg_cb[mass]=get_hist(0,phys_model.Data());
+    hists_cb[mass]=get_hist(mass,phys_model.Data());
 
     TString option="same hist";
     if (mass==0) option="hist";
 
+    hist->SetLineColor(mass/100+1);
     hist->Draw(option);
     char smass[3];
     if (mass != 0) { sprintf(smass, "%i", mass); }
@@ -307,12 +320,8 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   float sf= 1;
   int ymax = 0;
   int ymax_temp = 0;
-  string opt_cv[ms];
-  ofstream ocv_file;
-  ocv_file.open ("ControlPlots/"+idir+"/NN_output/ocv"+(idir!="" ? "_"+idir : "")+(tmass!="" ? "_"+tmass : "")+".txt");
 
-  for (int i=0; i<ms; i++) {
-    auto mass = masses[i];
+  for (auto mass : masses) {
 
     if (mass==0) continue;
     if (mass==masses[hms]) {
@@ -320,7 +329,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       c2->cd(2);
     }
 
-    auto significance = get_significance_hist(hists[mass],hists[0],sf);
+    auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf);
 
     TString option="same hist";
     if (mass==masses[1] || mass==hms) option="hist";
@@ -328,18 +337,21 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     ymax_temp = significance->GetBinContent(significance->GetMaximumBin());
     if (ymax_temp>ymax) ymax = ymax_temp;
 
-    opt_cv[i] = to_string(hist->GetXaxis()->GetBinCenter(significance->GetMaximumBin()));
-    opt_cv[i] = opt_cv[i].substr(0,4);
-    cout << "Mass : " << mass << endl;
-    cout << "Opt cut value : " << opt_cv[i] << endl;
-    cout << "--------------------" << endl;
-    ocv_file << mass << ", " << opt_cv[i] << endl;
-    
+    significance->SetLineColor(mass/100+1);
     significance->Draw(option);
     significance->GetYaxis()->SetRangeUser(0,ymax*1.2);
-  }
-  ocv_file.close();
 
+    // Comparing with Cut-based
+    if (drawCB) {
+      float Nsig = hists_cb[mass]->Integral();
+      float Nbkg = hists_bkg_cb[mass]->Integral();
+      float cb_ams = AMS(Nsig, Nbkg);
+      TLine *line = new TLine(0,cb_ams,1,cb_ams);
+      line->SetLineColor(mass/100+1);
+      line->SetLineStyle(7);
+      line->Draw("same hist");
+    }
+  }
   legend2->Draw();
 
   string signPath = "ControlPlots/"+idir+"/NN_output/significance" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "");
