@@ -9,12 +9,11 @@ The example below trains a model for a single mass point at 200 GeV and saves th
 python3 OPT_VBS_NN.py --mass_points 200 --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex 0 --nFold 4 --sdir m200
 ```
 
-This next example trains 4 folds for mass points 200 and 300 individually, saving each plots and models seperately
+This next example trains 4 folds for mass points 250 to 800 individually, saving each plots and models seperately
 ```
 for mass in 250 300 400 500 800;
 do for n in 0 1 2 3;
-    do  sdir="m"$mass;
-        python3 OPT_VBS_NN.py --mass_points $mass --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir GM_0728/m$mass/$sdir;
+    do python3 OPT_VBS_NN.py --mass_points $mass --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir GM_0728/m$mass;
         done;
     done
 ```
