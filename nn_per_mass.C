@@ -99,6 +99,7 @@ TH1F* get_bkg_hist(TString phys_model="GM") {
   chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root");
 
   TH1F* hist = new TH1F("bkg",title,nbins,xmin,xmax);
+  cout << "Bkg cut : " << select_weight << endl;                                //
   chain->Project(hist->GetName(),proj_str,select_weight,proj_option);
 
   return hist;
@@ -120,6 +121,7 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
 
     hist = new TH1F(histName ,title,nbins,xmin,xmax);
     select_weight += "*(abs(Weight)<10)";
+    cout << to_string(mass) << "- Sig cut : " << select_weight << endl;         //
     t->Project(hist->GetName(),proj_str,select_weight,proj_option);
   }
   else hist = get_bkg_hist(phys_model.Data());
@@ -128,11 +130,11 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
   hist->SetMinimum(1e-3);
   hist->SetLineWidth(2);
   hist->SetLineColor(get_color(mass));
-  
+
   return hist;
 }
 
-float AMS(float s, float b, bool debug=false) {
+float AMS_old(float s, float b, bool debug=false) {
 
   if (s<=0 or b<=0) return 0;
 
@@ -148,8 +150,14 @@ float AMS(float s, float b, bool debug=false) {
   if (debug) std::cout<<"s, b="<<s<<"\t"<<b<<", ams="<<ams<<std::endl;
 
   return ams;
-
 }
+
+float AMS(float s, float b, bool debug=false, float br=0) {
+  float rad = 2*((s+b+br)*log(1+(s/(b+br)))-s);
+  if (rad>0) return sqrt(rad);
+  else {cout << "AMS: radicand is negative. Returning 0" << endl; return 0;}
+}
+  
 
 TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
   
@@ -180,7 +188,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   tmass = name;
   sdir  = idir+'/'+tmass+'/';
 
-  if      (varname == "pSignal"     ) title="NN output : "+tmass, proj_str=varname, nbins = 25, xmin =0, xmax = 1;
+  if      (varname == "pSignal"     ) title="NN output : "+tmass, proj_str=varname, nbins = 50, xmin =0, xmax = 1;
   else if (varname == "M_WZ"        ) title=varname, proj_str=varname, nbins = 25, xmin =0, xmax = 1500;
   else if (varname == "M_jj"        ) title=varname, proj_str=varname, nbins = 50, xmin =0, xmax = 1500;
   else if (varname == "ZetaLep"     ) title=varname, proj_str=varname, nbins = 50, xmin =-3.5, xmax = 3.5;
@@ -223,7 +231,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   else proj_option="norm"; //normalize to 1
 
-  vector<int> masses{0,250,300,400,500,700,800};
+  vector<int> masses{0,250,300,400,500,600,700,800};
   int      hms = masses.size()/2+1;
   const int ms = masses.size();
 
@@ -231,23 +239,23 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   c1->Divide(2,1);
 
   c1->cd(1);
-  auto legend1 = new TLegend(0.7,0.65,0.9,0.9);
+  auto legend1 = new TLegend(0.7,0.7,0.9,0.9);
   legend1->SetHeader("Mass (GeV)","C"); 
   legend1->SetFillStyle(0); 
   legend1->SetLineWidth(0); 
   legend1->SetNColumns(2);
 
   c1->cd(2);
-  auto legend2 = new TLegend(0.7,0.65,0.9,0.9);
+  auto legend2 = new TLegend(0.7,0.7,0.9,0.9);
   legend2->SetHeader("Mass (GeV)","C"); 
   legend2->SetFillStyle(0); 
   legend2->SetLineWidth(0); 
   legend2->SetNColumns(2);
 
-  std::unordered_map<int,TH1F*> hists;
-  std::unordered_map<int,TH1F*> hists_bkg;
-  std::unordered_map<int,TH1F*> hists_bkg_cb;
-  std::unordered_map<int,TH1F*> hists_cb;
+  unordered_map<int,TH1F*> hists;
+  unordered_map<int,TH1F*> hists_bkg;
+  unordered_map<int,TH1F*> hists_bkg_cb;
+  unordered_map<int,TH1F*> hists_cb;
 
   c1->cd(1); 
   auto legend=legend1;
@@ -256,9 +264,14 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   char smass[3];
 
   for (auto mass : masses) {
+    cout << endl;                                                               //
+    cout << "--- " << to_string(mass) << " ---" << endl;                        //
+    select_weight = "(M_jj>100)";
+    if (norm2yield) select_weight += "*WeightNormalized";
 
     //Separating the curves on 2 figures
     if (mass==masses[hms]) {
+      cout << "Splitting here" << endl;                                         //
       legend->Draw();    
       gStyle->SetOptStat(0);
       if (varname=="pSignal" and norm2yield) gPad->SetLogy();
@@ -266,8 +279,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       legend=legend2; 
     
       //Plotting background on second figure
-      select_weight = "(M_jj>100)";
-      if (norm2yield) select_weight += "*WeightNormalized";
       hist = get_hist(0,phys_model.Data());
       TString option="hist";
       hist->Draw(option);
@@ -275,20 +286,20 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       legend->AddEntry(hist,smass,"f");
     }
 
-    select_weight = "(M_jj>100)";
-    if (mass != 0) select_weight = Form("(M_jj>100)*(M_WZ<(%i*1.4))*(M_WZ>(%i*0.6))",mass,mass);
-    if (norm2yield) select_weight += "*WeightNormalized";
-
+    if (mass != 0) select_weight += Form("*(M_WZ>(%i*0.6)*(M_WZ<(%i*1.4)))",mass,mass);
+    // Background histogram
+    hists_bkg[mass]=get_hist(0,phys_model.Data());
     // Current mass histogram
     hist = get_hist(mass,phys_model.Data());
     hists[mass]=hist;
-    // Background histogram
-    hists_bkg[mass]=get_hist(0,phys_model.Data());
-    // Cut-based selection histogram
-    select_weight += "*(M_jj>500)*(Deta_jj>3.5)";
-    cout << select_weight << endl;
-    hists_bkg_cb[mass]=get_hist(0,phys_model.Data());
-    hists_cb[mass]=get_hist(mass,phys_model.Data());
+
+    if (mass != 0) {
+      // Cut-based selection histogram
+      select_weight = Form("(M_jj>500)*(Deta_jj>3.5)*(M_WZ>(%i*0.6)*(M_WZ<(%i*1.4)))",mass,mass);
+      if (norm2yield) select_weight += "*WeightNormalized";
+      hists_bkg_cb[mass]=get_hist(0,phys_model.Data());
+      hists_cb[mass]=get_hist(mass,phys_model.Data());
+    }
 
     TString option="same hist";
     if (mass==0) option="hist";
@@ -318,8 +329,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   c2->cd(1);
 
   float sf= 1;
-  int ymax = 0;
-  int ymax_temp = 0;
 
   for (auto mass : masses) {
 
@@ -330,16 +339,15 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     }
 
     auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf);
+    significance->SetMaximum(32);
 
     TString option="same hist";
     if (mass==masses[1] || mass==hms) option="hist";
 
-    ymax_temp = significance->GetBinContent(significance->GetMaximumBin());
-    if (ymax_temp>ymax) ymax = ymax_temp;
 
+    // Drawing significance curve
     significance->SetLineColor(mass/100+1);
     significance->Draw(option);
-    significance->GetYaxis()->SetRangeUser(0,ymax*1.2);
 
     // Comparing with Cut-based
     if (drawCB) {

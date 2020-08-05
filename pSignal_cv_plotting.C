@@ -34,9 +34,9 @@ each of these are also drawn.
 //------------------------------------------------------------------------------
 
 //========================== PARAMETERS TO EDIT ================================
-string sdir   = "GM_0716";       // Subdirectory containing the files and in which to save the figures
+string sdir   = "GM_0728";       // Subdirectory containing the files and in which to save the figures
 string model  = "GM";            // Model used
-string opt_ID = "_4G";    // Optional file name identification
+string opt_ID = "_0731";    // Optional file name identification
 //==============================================================================
 
 float AMS(float s, float b, bool debug=false) {
@@ -59,29 +59,33 @@ int main() {
     string savedir = "ControlPlots/" + sdir + "/pSignal/"; // MAKE SURE PSIGNAL EXISTS IN SUBDIRECTORY
 
     // Initial mass and mass file ID
-    int mass_num;
-    int mass;
+    int mass_num_arr[6];
     string f_ID1;
     string f_ID2;
     string f_ID3;
     if (model == "GM") {
-        mass = 200;
-        mass_num = 64;
+        int mass_num_GM[6] = {66, 67, 69, 71, 73, 74};
+        for (int ig=0; ig<6; ig++) {mass_num_arr[ig] = mass_num_GM[ig];}
         f_ID1 = "4507";
         f_ID2 = "_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m";
         f_ID3 = "";
     }
 
     if (model == "HVT") {
-        mass = 300;
-        mass_num = 31;
+        int mass_num_HVT[6] = {30, 31, 32, 33, 35, 36};
+        for (int ih=0; ih<6; ih++) {mass_num_arr[ih] = mass_num_HVT[ih];}
         f_ID1 = "3077";
         f_ID2 = "_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m";
         f_ID3 = "";
     }
+
+    int mass_arr[6] = {250, 300, 400, 500, 700, 800};
     
     // Looping on all masses
     for (int i=0; i<8; i++) { // MAKE SURE THE FILES EXIST FOR EACH "i" VALUE
+        int mass = mass_arr[i];
+        int mass_num = mass_num_arr[i];
+        if (mass == 700) continue;
         
         // Creating the path for the data file
         string fdir  = rootdir + "m" + to_string(mass);
@@ -89,7 +93,6 @@ int main() {
         if (model=="HVT" && mass<1000) {
             mass_ID = "0" + mass_ID;
         }
-        if (model=="GM" && mass<600) {mass_num++;}
         if (model=="GM" && mass==900) {f_ID1 = "3050"; f_ID2 = "_MGPy8_A14NNPDF30NLO_VBS_H5p_lvll_"; f_ID3 = "_qcd0"; mass_num = 35;}
         string fname = "new_" + model + "_mainMVA." + f_ID1 + to_string(mass_num) + f_ID2 + mass_ID + f_ID3 + "_ntuples.root";
         string fpath = fdir + "/" + fname;
@@ -289,11 +292,6 @@ int main() {
     	c1->SaveAs(sfname2_c);
         
         c1->Close();
-        
-        // Updating mass and mass file ID
-        mass_num += 1;
-        mass     += 100;
-
     	cout << "--------------------------" << endl;
     }
     return 0;

@@ -175,7 +175,7 @@ def get_mass_label(mWZ):
 
     return mass_labels
         
-def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_window=False, mass=0):
+def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_window=True, mass=0):
     """Read background and signal files and save them as panda data frames"""
 
     #Names of bck samples
@@ -233,7 +233,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     prob = np.empty(len(namessig))
     print('\nRead Signal Samples')
     for i in range(len(namessig)):
-        sample = read_data(input_samples.filedirsig+namessig[i],isSignal=True)
+        sample = read_data(input_samples.filedirsig+namessig[i],mass_window=mass_window, mass=mass,isSignal=True)
         #sample['Weight']=sample['Weight']*input_samples.lumi*xssig[i]/neventssig[i]  #KM: This is done in WeightNormalized
         sample['LabelMass'] = get_mass_label(sample['M_WZ']) #sample['LabelMass'] = i
         print(namessig[i],"\tLabelMass=",i)

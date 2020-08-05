@@ -34,7 +34,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--m", "--model", help="Model to use", default="GM", type=str)
 parser.add_argument("--sd", "--subdir", help="Subdirectory in OutputRoot", default="", type=str)
 parser.add_argument("--rID", "--resultID", help="Identifier for the results' file", default="0",  type=str)
-parser.add_argument("--w", "--weight", help="WeightNormalized (0), abs(WN) (1), or else (2)", default=2, type=int)
 parser.add_argument("--mass", help="mass at which the training has been done", type=int)
 parser.add_argument("--ocv", help="Using optimal cut values", default=0, type=bool)
 args = parser.parse_args()
@@ -94,17 +93,7 @@ def getSamples():
 
     return input_samples_NN
 
-def getCV():
-    cv = 0
-    for model in os.listdir(f"OutputModel/{args.sd}/"):
-        if model.endswith("4_NN.h5"):
-            print(model)            
-            temp = float(model[int(model.find("CV")+3):int(model.find("CV")+8)])
-            cv += temp
-    return cv/4
-
-
-def AMS(s, b):
+def AMS_old(s, b):
     """ Approximate Median Significance """
 
     br = 0.00001
@@ -117,40 +106,44 @@ def AMS(s, b):
     
     return significance
 
-def bkgEvents(cins, mass, ucut=0, uwei=0):
+def AMS(s,b,br=0):
+    rad = 2*( (s+b+br) *math.log( 1+(s/(b+br)) )-s )
+    if rad>0: return math.sqrt(rad)
+    else: return 0
+
+def bkgEvents(cins, mass, ucut=0):
     """
     Returns the cut-based, normalize-weighted number of background events within
     the mass window - total, QCD and EW
 
     cins - config.input_samples or similar object
-    mass - 
+    mass - current mass analysis, as opposed to training mass
     ucut - user selection to use instead of cut-based selection
     uwei - method of normalizing weight
     """
 
     bkg = np.array([0.,0.])    # Number of events for QCD and EW
 
-    for i in range(len(cins.bckgr['name'])):
+    for i in range(2):
         # Accessing the data
         bkg_file = ROOT.TFile(cins.filedir+cins.bckgr['name'][i])
         tree = bkg_file.Get('nominal')
 
         # Choosing the cut
         if ucut: cut = ucut
-        else: cut = "M_jj>500 && Deta_jj>3.5"
+        else: 
+            cut = "M_jj>500 && Deta_jj>3.5"
 
         # Selecting the data
         cuts = 'M_jj>100 && M_WZ>({0}*0.6) && M_WZ<({0}*1.4) && {1}'.format(mass, cut)
         bkg_DF = pd.DataFrame(tree2array(tree, selection=cuts))
 
         # Calculating the number of events
-        if   uwei==0: bkg[i] = sum(bkg_DF['WeightNormalized'])
-        elif uwei==1: bkg[i] = sum(abs(bkg_DF['WeightNormalized']))
-        elif uwei==2: bkg[i] = sum(bkg_DF['WeightNormalized'])
+        bkg[i] = sum(bkg_DF['WeightNormalized'])
 
     return sum(bkg), bkg[0], bkg[1]
 
-def sigEvents(cins, mass, model, ucut=0, uwei=0):
+def sigEvents(cins, mass, model, ucut=0):
     """
     Returns the cut-based, normalize-weighted number of events of the signal
     for an individual mass within the mass window
@@ -180,38 +173,41 @@ def sigEvents(cins, mass, model, ucut=0, uwei=0):
 
     # Calculating the number of events
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
-    if   uwei==0: sig_nEv = sum(sig_DF['WeightNormalized'])
-    elif uwei==1: sig_nEv = sum(abs(sig_DF['WeightNormalized']))
-    elif uwei==2: sig_nEv = sum((abs(sig_DF['Weight'])<10)*sig_DF['WeightNormalized'])
+    sig_nEv = sum((abs(sig_DF['Weight'])<10)*sig_DF['WeightNormalized'])
     return sig_nEv
 
 #-------------------------------------------------------------------------------
 
 # Initializing arrays
-mass_arr = np.array([250,300,400,500,700,800])
+mass_arr = np.array([250,300,400,500,600,700,800])
 res_arr  = np.zeros((len(mass_arr)*2,5))
 
-# Input samples for cut-based analysis
-cins_CB = conf.input_samples
+# Samples
+cins = getSamples()
+
+# Number of point at which to evaluate the significance
+ncv = 50
 
 # Calculating the optimal cut value for the training mass
 if not args.ocv:
-    ncv = 25
     cvB = np.zeros(ncv)
     cvS = np.zeros(ncv)
     cvAMS = np.zeros(ncv)
     for i in range(ncv):
-        dots = "."*(10*i//ncv)
+        dots = "."*(12*i//ncv)
         print("Calculating optmial cut value...", end='')
-        print(dots+f"({i}/{ncv})", end='\r')
+        print(dots+f"({i}/{ncv})", end="\r")
         icv = i/(ncv)
-        cvB[i],cvQ,cvE = bkgEvents(getSamples(), args.mass, f"pSignal>{icv}", args.w)
-        cvS[i]         = sigEvents(getSamples(), args.mass, args.m, f"pSignal>{icv}", args.w)
+        cvB[i],cvQ,cvE = bkgEvents(cins, args.mass, f"pSignal>{icv}")
+        cvS[i]         = sigEvents(cins, args.mass, args.m, f"pSignal>{icv}")
         if cvB[i]>0 and cvS[i]>0:
             cvAMS[i]   = AMS(cvS[i], cvB[i])
-        print(cvAMS[i])
     cv = np.argmax(cvAMS)/(ncv)
-    print(f"Optimal cut value : {cv}                         \n")
+    print(f"Optimal cut value : {cv}                         \n")   
+    plt.plot(np.linspace(0,1,ncv),cvAMS)
+    plt.title(f"{cv:.1f} - {np.max(cvAMS):.2f}")
+    plt.savefig("ControlPlots/"+args.sd+"/CBvsNN_test.png")
+    plt.close()
 
 else: print("\nUsing optimal cut values for each mass")
 
@@ -221,7 +217,6 @@ for c in range(len(mass_arr)):
 
     # Calculating the optimal cut value for the current mass
     if args.ocv:
-        ncv = 25
         cvB = np.zeros(ncv)
         cvS = np.zeros(ncv)
         cvAMS = np.zeros(ncv)
@@ -230,27 +225,28 @@ for c in range(len(mass_arr)):
             print("Calculating optmial cut value...", end='')
             print(dots+f"({i}/{ncv})", end='\r')
             icv = i/(ncv)
-            cvB[i],cvQ,cvE = bkgEvents(getSamples(mass), mass, f"pSignal>{icv}", args.w)
-            cvS[i]         = sigEvents(getSamples(mass), mass, args.m, f"pSignal>{icv}", args.w)
+            cvB[i],cvQ,cvE = bkgEvents(cins, mass, f"pSignal>{icv}")
+            cvS[i]         = sigEvents(cins, mass, args.m, f"pSignal>{icv}")
             if cvB[i]>0 and cvS[i]>0:
                 cvAMS[i]   = AMS(cvS[i], cvB[i])
         cv = np.argmax(cvAMS)/(ncv)
         print("                                                 ",end="\r")
     
     # Number of events for cut-based analysis
-    n_bkg, QCD, EW = bkgEvents(cins_CB, mass, uwei=args.w)
-    n_sig = sigEvents(cins_CB, mass, args.m, uwei=args.w)
+    n_bkg, QCD, EW = bkgEvents(cins, mass)
+    n_sig = sigEvents(cins, mass, args.m)
 
     # Number of events for NN analysis
-    NN_bkg, NN_QCD, NN_EW = bkgEvents(getSamples(), mass, f"pSignal>{cv}", args.w)
-    NN_sig = sigEvents(getSamples(), mass, args.m, f"pSignal>{cv}", args.w)
+    NN_bkg, NN_QCD, NN_EW = bkgEvents(cins, mass, f"pSignal>{cv}")
+    NN_sig = sigEvents(cins, mass, args.m, f"pSignal>{cv}")
 
     # Printing number of events
     print(f"Cut value : {cv:.2f}")
     print(   "              \t Cut-based \t NN")
     print(   "Signal        \t {:.2f}    \t {:.2f}\
             \nQCD           \t {:.2f}    \t {:.2f}\
-            \nEW            \t {:.2f}    \t {:.2f}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW))
+            \nEW            \t {:.2f}    \t {:.2f}\
+            \nBKG           \t {:.2f}    \t {:.2f}".format(n_sig, NN_sig, QCD, NN_QCD, EW, NN_EW, n_bkg, NN_bkg))
     
     # Calculating and printing significance
     ams = 0.
@@ -270,7 +266,7 @@ for c in range(len(mass_arr)):
 if args.rID != "0":
     # Creating a DataFrame of the results
     mass_rl = [m for m in mass_arr for _ in (0,1)]
-    cols_rl = ["Cut-based","NN"]*7
+    cols_rl = ["Cut-based","NN"]*len(mass_arr)
     indx_rl = ["Cut value","Signal","QCD","EW","Significance"]
     pd.options.display.float_format = '{:.2f}'.format
     res_DF  = pd.DataFrame(res_arr.T, columns=pd.MultiIndex.from_tuples(list(zip(mass_rl,cols_rl))),index=indx_rl)
