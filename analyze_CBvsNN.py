@@ -125,7 +125,7 @@ def bkgEvents(cins, mass, ucut=0):
     bkg = np.array([0.,0.])    # Number of events for QCD and EW
 
     for i in range(2):
-        # Accessing the data
+        # Accesscccccccccing the data
         bkg_file = ROOT.TFile(cins.filedir+cins.bckgr['name'][i])
         tree = bkg_file.Get('nominal')
 
@@ -158,8 +158,9 @@ def sigEvents(cins, mass, model, ucut=0):
         sigMO = cins.sigGM
     elif model == "HVT":
         sigMO = cins.sigHVT
+    else: print("Error! Model must be 'GM' or 'HVT'")
 
-    isf = int(np.where([f"{mass}" in sigMO['name'][i] for i in range(len(sigMO['name']))])[0])
+    isf = int(np.where([f"{mass}_ntuples" in sigMO['name'][i] for i in range(len(sigMO['name']))])[0])
     sig_file = ROOT.TFile(cins.filedir+sigMO['name'][isf])
     tree = sig_file.Get('nominal')
     
@@ -173,7 +174,7 @@ def sigEvents(cins, mass, model, ucut=0):
 
     # Calculating the number of events
     sig_DF = pd.DataFrame(tree2array(tree, selection=cuts))
-    sig_nEv = sum((abs(sig_DF['Weight'])<10)*sig_DF['WeightNormalized'])
+    sig_nEv = sum( (abs(sig_DF['Weight'])<10) *sig_DF['WeightNormalized'] )
     return sig_nEv
 
 #-------------------------------------------------------------------------------
@@ -186,7 +187,7 @@ res_arr  = np.zeros((len(mass_arr)*2,5))
 cins = getSamples()
 
 # Number of point at which to evaluate the significance
-ncv = 50
+ncv = 10
 
 # Calculating the optimal cut value for the training mass
 if not args.ocv:
@@ -204,12 +205,14 @@ if not args.ocv:
             cvAMS[i]   = AMS(cvS[i], cvB[i])
     cv = np.argmax(cvAMS)/(ncv)
     print(f"Optimal cut value : {cv}                         \n")   
-    plt.plot(np.linspace(0,1,ncv),cvAMS)
-    plt.title(f"{cv:.1f} - {np.max(cvAMS):.2f}")
-    plt.savefig("ControlPlots/"+args.sd+"/CBvsNN_test.png")
-    plt.close()
 
 else: print("\nUsing optimal cut values for each mass")
+
+fig, (ax1,ax2) = plt.subplots(1,2,figsize=(9,4))
+ax1.set_ylim(0,32)
+ax2.set_ylim(0,32)
+dleg   = 1
+colors = ["#FF5733","#7D3C98","#5DADE2","#229954","#F4D03F","#48C9B0","#F39C12","#F0B27A","#3E4053"]
 
 for c in range(len(mass_arr)):
     mass = int(mass_arr[c])
@@ -231,6 +234,11 @@ for c in range(len(mass_arr)):
                 cvAMS[i]   = AMS(cvS[i], cvB[i])
         cv = np.argmax(cvAMS)/(ncv)
         print("                                                 ",end="\r")
+        
+        # Plotting significance
+        ax = ax1
+        if c>=(len(mass_arr)//2+1): ax = ax2
+        ax.plot(np.linspace(0,1,ncv), cvAMS, color=colors[c], label=mass)
     
     # Number of events for cut-based analysis
     n_bkg, QCD, EW = bkgEvents(cins, mass)
@@ -259,9 +267,22 @@ for c in range(len(mass_arr)):
             NN_ams = "{:.2f}".format(AMS(NN_sig, NN_bkg))
     print(f"Significance \t {ams}     \t {NN_ams}")
 
+    # Plotting significance of cut-based
+    ax = ax1
+    if c>=(len(mass_arr)//2+1): 
+        if dleg: 
+            ax.legend()
+            dleg = 0
+        ax = ax2
+    ax.axhline(float(ams), color=colors[c], linestyle="--")
+
     # Updating results' array
     res_arr[c*2] = None, n_sig, QCD, EW, ams
     res_arr[c*2+1] = cv, NN_sig, NN_QCD, NN_EW, NN_ams
+
+ax.legend()
+plt.savefig("ControlPlots/"+args.sd+"/CBvsNN_significance.png")
+plt.close()
 
 if args.rID != "0":
     # Creating a DataFrame of the results

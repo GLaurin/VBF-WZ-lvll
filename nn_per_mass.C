@@ -99,7 +99,6 @@ TH1F* get_bkg_hist(TString phys_model="GM") {
   chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root");
 
   TH1F* hist = new TH1F("bkg",title,nbins,xmin,xmax);
-  cout << "Bkg cut : " << select_weight << endl;                                //
   chain->Project(hist->GetName(),proj_str,select_weight,proj_option);
 
   return hist;
@@ -121,7 +120,6 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
 
     hist = new TH1F(histName ,title,nbins,xmin,xmax);
     select_weight += "*(abs(Weight)<10)";
-    cout << to_string(mass) << "- Sig cut : " << select_weight << endl;         //
     t->Project(hist->GetName(),proj_str,select_weight,proj_option);
   }
   else hist = get_bkg_hist(phys_model.Data());
@@ -135,7 +133,7 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
 }
 
 float AMS_old(float s, float b, bool debug=false) {
-
+  // Older version of AMS the includes some strange terms in its log
   if (s<=0 or b<=0) return 0;
 
   float br = 0.00001;// #KM: systematic unc?
@@ -157,9 +155,10 @@ float AMS(float s, float b, bool debug=false, float br=0) {
   if (rad>0) return sqrt(rad);
   else {cout << "AMS: radicand is negative. Returning 0" << endl; return 0;}
 }
-  
 
-TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
+float Nsig_ocv, Nbkg_ocv, Nsig_cv, Nbkg_cv, AMS_cv;
+int tmCV;
+TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf, bool is_tm=false) {
   
   TString hname="significance_";
   TH1F* significance = (TH1F*) h_sig->Clone(hname+h_sig->GetName());
@@ -169,15 +168,25 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf) {
   h_sig->Scale(sf);
   h_bkg->Scale(sf);
 
-  float Nsig=0,Nbkg=0;
-  for( int i=0; i< significance->GetNbinsX(); i++) {
-    Nsig=h_sig->Integral(i,h_sig->GetNbinsX());
-    Nbkg=h_bkg->Integral(i,h_bkg->GetNbinsX());
-    significance->SetBinContent(i,AMS(Nsig,Nbkg));
+  const int nb = significance->GetNbinsX();
+  float Nsig[nb], Nbkg[nb];
+
+  for( int i=0; i<nb; i++) {
+    Nsig[i] = h_sig->Integral(i,h_sig->GetNbinsX());
+    Nbkg[i] = h_bkg->Integral(i,h_bkg->GetNbinsX());
+    significance->SetBinContent(i,AMS(Nsig[i],Nbkg[i]));
   }
+  
+  int ocv_bin = significance->GetMaximumBin();
+  Nsig_ocv = Nsig[ocv_bin];  
+  Nbkg_ocv = Nbkg[ocv_bin];
+
+  if (is_tm) tmCV = ocv_bin;
+  Nsig_cv = Nsig[tmCV];
+  Nbkg_cv = Nbkg[tmCV];
+  AMS_cv  = significance->GetBinContent(tmCV);
 
   return significance;
-
 }
 
 void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM", bool drawCB=true) {
@@ -231,7 +240,7 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   else proj_option="norm"; //normalize to 1
 
-  vector<int> masses{0,250,300,400,500,600,700,800};
+  vector<int> masses{stoi(tmass.substr(1,4)),0,250,300,400,500,600,700,800};
   int      hms = masses.size()/2+1;
   const int ms = masses.size();
 
@@ -259,19 +268,20 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   c1->cd(1); 
   auto legend=legend1;
-
   TH1F* hist;
   char smass[3];
-
+  
+  bool tmass2 = false;
   for (auto mass : masses) {
-    cout << endl;                                                               //
-    cout << "--- " << to_string(mass) << " ---" << endl;                        //
+    //As to not loop over tmass twice
+    if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
+    tmass2 = true;
+
     select_weight = "(M_jj>100)";
     if (norm2yield) select_weight += "*WeightNormalized";
 
     //Separating the curves on 2 figures
     if (mass==masses[hms]) {
-      cout << "Splitting here" << endl;                                         //
       legend->Draw();    
       gStyle->SetOptStat(0);
       if (varname=="pSignal" and norm2yield) gPad->SetLogy();
@@ -288,19 +298,20 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
     if (mass != 0) select_weight += Form("*(M_WZ>(%i*0.6)*(M_WZ<(%i*1.4)))",mass,mass);
     // Background histogram
-    hists_bkg[mass]=get_hist(0,phys_model.Data());
+    hists_bkg[mass] = get_hist(0,phys_model.Data());
     // Current mass histogram
     hist = get_hist(mass,phys_model.Data());
-    hists[mass]=hist;
+    hists[mass]  = hist;
 
     if (mass != 0) {
       // Cut-based selection histogram
       select_weight = Form("(M_jj>500)*(Deta_jj>3.5)*(M_WZ>(%i*0.6)*(M_WZ<(%i*1.4)))",mass,mass);
       if (norm2yield) select_weight += "*WeightNormalized";
-      hists_bkg_cb[mass]=get_hist(0,phys_model.Data());
-      hists_cb[mass]=get_hist(mass,phys_model.Data());
+      hists_bkg_cb[mass] = get_hist(0,phys_model.Data());
+      hists_cb[mass] = get_hist(mass,phys_model.Data());
     }
 
+    // Drawing the curve
     TString option="same hist";
     if (mass==0) option="hist";
 
@@ -310,7 +321,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     if (mass != 0) { sprintf(smass, "%i", mass); }
     else { sprintf(smass, "%s", "bkg"); }
     legend->AddEntry(hist,smass,"f");
-
   }
 
   if (varname=="pSignal" and norm2yield) gPad->SetLogy();
@@ -330,20 +340,36 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   float sf= 1;
 
+  // CB vs NN table initializing
+  ofstream cnfile("ControlPlots/"+idir+"/NN_output/CbvsNN"+ (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "")+".txt");
+  cnfile << "# Comparison between Cut-Based and Neuron Network" << endl << "     ";
+  map<int, float> sig_CB, sig_NN_ocv, sig_NN_cv, bkg_CB, bkg_NN_ocv, bkg_NN_cv, ams_CB, ams_NN_ocv, ams_NN_cv;
+
+  tmass2 = true;
   for (auto mass : masses) {
+    //As to not loop over tmass twice
+    if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
+    tmass2 = false;
 
     if (mass==0) continue;
+    cnfile << mass << ": CB    | NN ocv - cv     ";
     if (mass==masses[hms]) {
       legend1->Draw();
       c2->cd(2);
     }
 
-    auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf);
+    auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf,mass==stoi(tmass.substr(1,4)));
+    sig_NN_ocv[mass] = Nsig_ocv;
+    bkg_NN_ocv[mass] = Nbkg_ocv;
+    ams_NN_ocv[mass] = significance->GetBinContent(significance->GetMaximumBin());
+    sig_NN_cv[mass]  = Nsig_cv;
+    bkg_NN_cv[mass]  = Nbkg_cv;
+    ams_NN_cv[mass]  = AMS_cv;
+
     significance->SetMaximum(32);
 
     TString option="same hist";
     if (mass==masses[1] || mass==hms) option="hist";
-
 
     // Drawing significance curve
     significance->SetLineColor(mass/100+1);
@@ -354,10 +380,15 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       float Nsig = hists_cb[mass]->Integral();
       float Nbkg = hists_bkg_cb[mass]->Integral();
       float cb_ams = AMS(Nsig, Nbkg);
+
       TLine *line = new TLine(0,cb_ams,1,cb_ams);
       line->SetLineColor(mass/100+1);
       line->SetLineStyle(7);
       line->Draw("same hist");
+
+      bkg_CB[mass] = Nbkg;
+      sig_CB[mass] = Nsig;
+      ams_CB[mass] = cb_ams;
     }
   }
   legend2->Draw();
@@ -366,6 +397,24 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   c2->SaveAs((signPath+".png" ).data());
   c2->SaveAs((signPath+".root").data());
+
+  cnfile << endl;
+  for (int j; j<3; j++) {
+    if (j==0) cnfile << "SIG  ";
+    if (j==1) cnfile << "BKG  ";
+    if (j==2) cnfile << "AMS  ";
+    tmass2 = true;
+    for (auto mass : masses) {
+      if (mass == 0) continue;
+      if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
+      tmass2 = false;
+      if (j==0) cnfile << "     " << to_string(sig_CB[mass]).substr(0,6) << "  " << to_string(sig_NN_ocv[mass]).substr(0,6) << "  " << to_string(sig_NN_cv[mass]).substr(0,6) << "  ";
+      if (j==1) cnfile << "     " << to_string(bkg_CB[mass]).substr(0,6) << "  " << to_string(bkg_NN_ocv[mass]).substr(0,6) << "  " << to_string(bkg_NN_cv[mass]).substr(0,6) << "  ";
+      if (j==2) cnfile << "     " << to_string(ams_CB[mass]).substr(0,6) << "  " << to_string(ams_NN_ocv[mass]).substr(0,6) << "  " << to_string(ams_NN_cv[mass]).substr(0,6) << "  ";
+    }
+    cnfile << endl;
+  }
+  cnfile.close();
 
   return;
  
