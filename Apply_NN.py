@@ -22,7 +22,8 @@ from pathlib import Path
 def read_phys_model(file_name):
 
     s_model_name='GM'
-    if file_name.find('_HVT')!=-1: s_model_name='HVT'
+    if   file_name.find('_HVT')!=-1: s_model_name='HVT'
+    elif file_name.find('_QQ')!=-1:s_model_name='QQ'
 
     return s_model_name
 
@@ -217,7 +218,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
 
-    model_files,tr_files=parse_model_files(args.input)
+    model_files,tr_files=parse_model_files(args.sdir+"/"+args.input)
 
     #Load input_sample class from config file
     input_sample=conf.input_samples
@@ -231,8 +232,8 @@ if __name__ == '__main__':
     phys_model=read_phys_models(model_files)
 
     #Load Mean and std dev
-    if not(phys_model=='GM' or phys_model=='HVT'):
-        raise NameError('Model needs to be either GM or HVT')
+    if not(phys_model=='GM' or phys_model=='HVT' or phys_model=='QQ'):
+        raise NameError('Model needs to be either GM, HVT or QQ')
 #    X_mean = np.load('mean'+phys_model+'.npy')
 #    X_dev = np.load('std_dev'+phys_model+'.npy')
     #Mean and std dev from training
@@ -251,7 +252,7 @@ if __name__ == '__main__':
     print('Applying on all samples')
     for bkg_file in list_bkg:
         #if "450765" in bkg_file:
-        analyze_data_folds(apply_sample.filedirapp,bkg_file,models, tr_files,-1,input_sample.variables,phys_model,cut_values,args.sdir)
+        analyze_data_folds(apply_sample.filedirapp, bkg_file,models,  tr_files, -1, input_sample.variables, phys_model, cut_values,args.sdir)
         pass
 
 #    print('Applying on sig sample')

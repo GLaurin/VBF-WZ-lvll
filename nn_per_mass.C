@@ -7,6 +7,7 @@
 #include <TH1F.h>
 #include <TROOT.h>
 #include <TChain.h>
+#include <TGraph.h>
 #include <TCanvas.h>
 #include <TStyle.h>
 #include <TLegend.h>
@@ -18,12 +19,8 @@
 #include <fstream>
 using namespace std;
 
-string idir;
-string tmass;
-string sdir;
-
+string idir, tmass, sdir;
 string get_file_name(int mass, string phys_model="GM") {
-  
   string insert_str="main";
   string              file_path="OutputRoot/"+sdir+"/new_"+phys_model+"_"+insert_str;
   if      (mass==200) file_path+="MVA.450765_MGaMcAtNloPy8EG_A14NNPDF23LO_vbfGM_sH05_H5pWZ_lvll_m200_ntuples.root";
@@ -53,27 +50,67 @@ string get_file_name(int mass, string phys_model="GM") {
     else if (mass==1000) file_path+="MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root";
   }
 
-  bool warning= (phys_model=="GM" and mass==1000) or (phys_model=="HVT" and mass==200);
+  if (phys_model=="QQ") {
+    file_path="OutputRoot/"+sdir+"/new_"+phys_model+"_"+insert_str;
+    if      (mass== 500) file_path+="MVA.307733_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0500_ntuples.root";
+    else if (mass== 600) file_path+="MVA.307734_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0600_ntuples.root";
+    else if (mass== 700) file_path+="MVA.307735_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0700_ntuples.root";
+    else if (mass== 800) file_path+="MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root";
+    else if (mass== 900) file_path+="MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root";
+    else if (mass==1000) file_path+="MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root";
+    else if (mass==1100) file_path+="MVA.307739_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1100_ntuples.root";
+    else if (mass==1200) file_path+="MVA.307740_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1200_ntuples.root";
+    else if (mass==1300) file_path+="MVA.307741_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1300_ntuples.root";
+    else if (mass==1400) file_path+="MVA.307742_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1400_ntuples.root";
+    else if (mass==1500) file_path+="MVA.307743_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1500_ntuples.root";
+    else if (mass==1600) file_path+="MVA.307744_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1600_ntuples.root";
+    else if (mass==1700) file_path+="MVA.307745_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1700_ntuples.root";
+    else if (mass==1800) file_path+="MVA.307746_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1800_ntuples.root";
+    else if (mass==1900) file_path+="MVA.307747_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1900_ntuples.root";
+    else if (mass==2000) file_path+="MVA.307748_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m2000_ntuples.root";
+  }
+
+  bool warning= (phys_model=="GM" and mass>900) or (phys_model=="HVT" and mass==200) or (phys_model=="QQ" and mass<500);
   if (warning) {cout<<"phys_model: "<<phys_model<<" while mass= "<<mass<<". Aborting the process."<<endl; exit(1);}
 
   return file_path;
-  
+}
+
+string QQ_filename(int mass) {
+  // HVT's qq-fusion ntuples' filenames per mass
+  string insert_str="main";
+  string               file_path="OutputRoot/"+sdir+"/new_QQ_"+insert_str;
+  if      (mass==500)  file_path+="MVA.302266_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0500_ntuples.root";
+  else if (mass==600)  file_path+="MVA.302267_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0600_ntuples.root";
+  else if (mass==700)  file_path+="MVA.302268_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0700_ntuples.root";
+  else if (mass==800)  file_path+="MVA.302269_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0800_ntuples.root";
+  else if (mass==900)  file_path+="MVA.302270_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0900_ntuples.root";
+  else if (mass==1000) file_path+="MVA.302271_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1000_ntuples.root";
+  else if (mass==1100) file_path+="MVA.302272_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1100_ntuples.root";
+  else if (mass==1200) file_path+="MVA.302273_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1200_ntuples.root";
+  else if (mass==1300) file_path+="MVA.302274_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1300_ntuples.root";
+  else if (mass==1400) file_path+="MVA.302275_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1400_ntuples.root";
+  else if (mass==1500) file_path+="MVA.302276_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1500_ntuples.root";
+  else if (mass==1700) file_path+="MVA.302278_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1700_ntuples.root";
+  else if (mass==1800) file_path+="MVA.302279_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1800_ntuples.root";
+  else if (mass==1900) file_path+="MVA.302280_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1900_ntuples.root";
+  else if (mass==2000) file_path+="MVA.302281_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m2000_ntuples.root";
+  return file_path;
 }
 
 int get_color(int mass) {
 
   int color = kBlack;
-  if      (mass==250) color=kGray+2;
-  else if (mass==300) color=kMagenta;
-  else if (mass==400) color=kBlue; 
-  else if (mass==500) color=kCyan+2;
-  else if (mass==600) color=kGreen+2; 
-  else if (mass==700) color=kYellow+2;
-  else if (mass==800) color=kOrange;
-  else if (mass==900) color=kRed;
+  if      (mass==250 or mass==1000 or mass==1800)  color=kGray+2;
+  else if (mass==300 or mass==1100 or mass==1900)  color=kMagenta;
+  else if (mass==400 or mass==1200 or mass==2000)  color=kBlue; 
+  else if (mass==500 or mass==1300)                color=kCyan+2;
+  else if (mass==600 or mass==1400)                color=kGreen+2; 
+  else if (mass==700 or mass==1500)                color=kYellow+2;
+  else if (mass==800 or mass==1600)                color=kOrange;
+  else if (mass==900 or mass==1700)                color=kRed;
 
   return color;
-  
 }
 
 // index           = 0
@@ -91,10 +128,10 @@ TString proj_option="";
 int nbins = 50; float xmin =0, xmax = 1;
 
 TH1F* get_bkg_hist(TString phys_model="GM") {
-
   TChain* chain = new TChain("nominal");
   TString ins_str="main";
   //chain->Add("OutputRoot/new_GM_"+ins_str+"MVA.364253_Sherpa_222_NNPDF30NNLO_lllv_ntuples.root");
+
   chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.361292_MGaMcAtNloPy8EG_NNPDF30LO_A14NNPDF23LO_WZ_lvll_FxFx_ntuples.root");
   chain->Add(((TString)"OutputRoot/")+sdir.data()+"/new_"+phys_model+"_"+ins_str+"MVA.364284_Sherpa_222_NNPDF30NNLO_lllvjj_EW6_ntuples.root");
 
@@ -106,11 +143,12 @@ TH1F* get_bkg_hist(TString phys_model="GM") {
 
 float mfac=20;
 
-TH1F* get_hist(int mass,TString phys_model="GM") {
+TH1F* get_hist(int mass,TString phys_model="GM", bool qqplot=false) {
 
   TH1F* hist;
   if (mass>0) {
     string fname=get_file_name(mass,phys_model.Data());
+    if (qqplot==true) fname = QQ_filename(mass);
     
     TFile* f = TFile::Open(fname.data(),"read");
     TTree* t = (TTree*)f->Get("nominal");
@@ -124,9 +162,6 @@ TH1F* get_hist(int mass,TString phys_model="GM") {
   }
   else hist = get_bkg_hist(phys_model.Data());
 
-  hist->SetMaximum(hist->GetBinContent( hist->GetMaximumBin() )*mfac);
-  hist->SetMinimum(1e-3);
-  hist->SetLineWidth(2);
   hist->SetLineColor(get_color(mass));
 
   return hist;
@@ -152,7 +187,7 @@ float AMS_old(float s, float b, bool debug=false) {
 
 float AMS(float s, float b, bool debug=false, float br=0) {
   float rad = 2*((s+b+br)*log(1+(s/(b+br)))-s);
-  if (rad>0) return sqrt(rad);
+  if (rad>0 && rad<1000) return sqrt(rad);
   else {cout << "AMS: radicand is negative. Returning 0" << endl; return 0;}
 }
 
@@ -161,8 +196,7 @@ int tmCV;
 TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf, bool is_tm=false) {
   
   TString hname="significance_";
-  TH1F* significance = (TH1F*) h_sig->Clone(hname+h_sig->GetName());
-  significance->Reset();
+  TH1F* significance = new TH1F("significance",title,nbins,xmin,xmax);
   significance->SetTitle("Significance for yield / 140fb-1");
 
   h_sig->Scale(sf);
@@ -189,13 +223,13 @@ TH1F* get_significance_hist(TH1F* h_sig, TH1F* h_bkg, float sf, bool is_tm=false
   return significance;
 }
 
-void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM", bool drawCB=true) {
+void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool norm2yield=true, TString phys_model="GM", bool drawCB=true, bool mMulti=false) {
 
   if (norm2yield) mfac=20;
 
-  idir = dir;
+  idir  = dir;
   tmass = name;
-  sdir  = idir+'/'+tmass+'/';
+  sdir  = idir+'/'+ (tmass=="mMulti" ? "" : tmass+"/");
 
   if      (varname == "pSignal"     ) title="NN output : "+tmass, proj_str=varname, nbins = 50, xmin =0, xmax = 1;
   else if (varname == "M_WZ"        ) title=varname, proj_str=varname, nbins = 25, xmin =0, xmax = 1500;
@@ -240,7 +274,8 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
 
   else proj_option="norm"; //normalize to 1
 
-  vector<int> masses{stoi(tmass.substr(1,4)),0,250,300,400,500,600,700,800};
+  vector<int> masses{0,250,300,400,500,600,700,800,900};
+  if (phys_model=="QQ") masses={0,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1700,1800,1900,2000};
   int      hms = masses.size()/2+1;
   const int ms = masses.size();
 
@@ -271,18 +306,14 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   TH1F* hist;
   char smass[3];
   
-  bool tmass2 = false;
   for (auto mass : masses) {
-    //As to not loop over tmass twice
-    if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
-    tmass2 = true;
 
     select_weight = "(M_jj>100)";
     if (norm2yield) select_weight += "*WeightNormalized";
 
     //Separating the curves on 2 figures
     if (mass==masses[hms]) {
-      legend->Draw();    
+      legend->Draw();
       gStyle->SetOptStat(0);
       if (varname=="pSignal" and norm2yield) gPad->SetLogy();
       c1->cd(2); 
@@ -315,7 +346,6 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     TString option="same hist";
     if (mass==0) option="hist";
 
-    hist->SetLineColor(mass/100+1);
     hist->Draw(option);
     char smass[3];
     if (mass != 0) { sprintf(smass, "%i", mass); }
@@ -341,24 +371,25 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   float sf= 1;
 
   // CB vs NN table initializing
-  ofstream cnfile("ControlPlots/"+idir+"/NN_output/CbvsNN"+ (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "")+".txt");
-  cnfile << "# Comparison between Cut-Based and Neuron Network" << endl << "     ";
-  map<int, float> sig_CB, sig_NN_ocv, sig_NN_cv, bkg_CB, bkg_NN_ocv, bkg_NN_cv, ams_CB, ams_NN_ocv, ams_NN_cv;
+  ofstream cnfile("ControlPlots/"+idir+"/NN_output/CbvsNN"+ (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "")+".csv");
+  map<int, float> sig_CB, sig_NN_ocv, bkg_CB, bkg_NN_ocv, ams_CB, ams_NN_ocv;
+  map<int, float> sig_NN_cv, bkg_NN_cv, ams_NN_cv;
+  if (mMulti==false) {
+    auto significance = get_significance_hist(hists[stoi(tmass.substr(1,4))], hists_bkg[stoi(tmass.substr(1,4))], sf, true);
+  }
 
-  tmass2 = true;
   for (auto mass : masses) {
-    //As to not loop over tmass twice
-    if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
-    tmass2 = false;
 
     if (mass==0) continue;
-    cnfile << mass << ": CB    | NN ocv - cv     ";
+    cnfile << "," << mass << "," << mass;
+    if (mMulti==false) cnfile << "," << mass;
     if (mass==masses[hms]) {
       legend1->Draw();
       c2->cd(2);
     }
 
-    auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf,mass==stoi(tmass.substr(1,4)));
+    // Signal, background and significance
+    auto significance = get_significance_hist(hists[mass],hists_bkg[mass],sf);
     sig_NN_ocv[mass] = Nsig_ocv;
     bkg_NN_ocv[mass] = Nbkg_ocv;
     ams_NN_ocv[mass] = significance->GetBinContent(significance->GetMaximumBin());
@@ -366,13 +397,11 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
     bkg_NN_cv[mass]  = Nbkg_cv;
     ams_NN_cv[mass]  = AMS_cv;
 
-    significance->SetMaximum(32);
-
     TString option="same hist";
     if (mass==masses[1] || mass==hms) option="hist";
 
     // Drawing significance curve
-    significance->SetLineColor(mass/100+1);
+    significance->SetLineColor(get_color(mass));
     significance->Draw(option);
 
     // Comparing with Cut-based
@@ -382,13 +411,14 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
       float cb_ams = AMS(Nsig, Nbkg);
 
       TLine *line = new TLine(0,cb_ams,1,cb_ams);
-      line->SetLineColor(mass/100+1);
+      line->SetLineColor(get_color(mass));
       line->SetLineStyle(7);
       line->Draw("same hist");
 
       bkg_CB[mass] = Nbkg;
       sig_CB[mass] = Nsig;
       ams_CB[mass] = cb_ams;
+    significance->SetMaximum(30);
     }
   }
   legend2->Draw();
@@ -398,19 +428,94 @@ void nn_per_mass(string dir="", string name="",TString varname="pSignal",bool no
   c2->SaveAs((signPath+".png" ).data());
   c2->SaveAs((signPath+".root").data());
 
-  cnfile << endl;
-  for (int j; j<3; j++) {
-    if (j==0) cnfile << "SIG  ";
-    if (j==1) cnfile << "BKG  ";
-    if (j==2) cnfile << "AMS  ";
-    tmass2 = true;
+  // Plotting the significance per mass and method
+  auto c3 = new TCanvas("c3","title",500,400);
+  auto ams_legend = new TLegend(0.75,0.78,0.9,0.9);
+  map<int, float> ams_TD;
+  TString ams_curve_opt;
+  TString label;
+  TString ams_title = "Significance per mass and method - "+tmass;
+  for (int l; l<3; l++) {
+    auto ams_curve = new TGraph();
+    if (l==0)                       {ams_TD = ams_NN_ocv; ams_curve_opt = "APL"; ams_curve->SetMarkerStyle(20); label="NN opt";}
+    else if (l==1 && mMulti==false) {ams_TD = ams_NN_cv;  ams_curve_opt = "PL";  ams_curve->SetMarkerStyle(21); label="NN tcv";}
+    else if (l==2)                  {ams_TD = ams_CB;     ams_curve_opt = "PL";  ams_curve->SetMarkerStyle(23); label="Cut-Based";}
+    else continue;
+
+    ams_curve->SetLineColor(2+l);
+    ams_curve->SetMarkerColor(2+l);
+    ams_curve->SetTitle(ams_title);
+
+    int k = 0;
     for (auto mass : masses) {
       if (mass == 0) continue;
-      if (mass == stoi(tmass.substr(1,4)) && tmass2) continue;
-      tmass2 = false;
-      if (j==0) cnfile << "     " << to_string(sig_CB[mass]).substr(0,6) << "  " << to_string(sig_NN_ocv[mass]).substr(0,6) << "  " << to_string(sig_NN_cv[mass]).substr(0,6) << "  ";
-      if (j==1) cnfile << "     " << to_string(bkg_CB[mass]).substr(0,6) << "  " << to_string(bkg_NN_ocv[mass]).substr(0,6) << "  " << to_string(bkg_NN_cv[mass]).substr(0,6) << "  ";
-      if (j==2) cnfile << "     " << to_string(ams_CB[mass]).substr(0,6) << "  " << to_string(ams_NN_ocv[mass]).substr(0,6) << "  " << to_string(ams_NN_cv[mass]).substr(0,6) << "  ";
+      ams_curve->SetPoint(k, mass, ams_TD[mass]);
+      k++;
+    }
+    ams_curve->SetMinimum(0);
+    if (mMulti==false && phys_model=="HVT" && (stoi(tmass.substr(1,4))>400)) {c3->SetLogy(); ams_curve->SetMinimum(10E-3);}
+    ams_curve->SetMaximum(25);
+    ams_curve->SetMinimum(-0.8);
+    if (phys_model=="QQ") ams_curve->SetMaximum(2);
+    if (phys_model=="QQ") ams_curve->SetMinimum(-0.1);
+    ams_curve->Draw(ams_curve_opt);
+    ams_legend->AddEntry(ams_curve,label,"lep");
+  }
+  ams_legend->Draw();
+  c3->SaveAs(("ControlPlots/"+idir+"/NN_output/AMS_curves" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "") + ".png").data());
+  c3->SaveAs(("ControlPlots/"+idir+"/NN_output/AMS_curves" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "") + ".root").data());
+
+  auto c4 = new TCanvas("c4","title",800,400);
+  c4->Divide(2,1);
+  c4->cd(1);
+
+  for (auto mass : masses) {
+    select_weight = "(M_jj>100)";
+    if (norm2yield) select_weight += "*WeightNormalized";
+
+    //Separating the curves on 2 figures
+    if (mass==masses[hms]) {
+      legend1->Draw();
+      gStyle->SetOptStat(0);
+      if (varname=="pSignal" and norm2yield) gPad->SetLogy();
+      c4->cd(2);
+    }
+
+    if (mass != 0) select_weight += Form("*(M_WZ>(%i*0.6)*(M_WZ<(%i*1.4)))",mass,mass);
+    // Current mass histogram
+    hist = get_hist(mass,phys_model.Data(),true);
+
+    // Drawing the curve
+    TString option="same hist";
+    if (mass==0) option="hist";
+    hist->Draw(option);
+  }
+  legend2->Draw();
+  c4->SaveAs(("ControlPlots/"+idir+"/NN_output/QQ_pSignal" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "") + ".png").data());
+  c4->SaveAs(("ControlPlots/"+idir+"/NN_output/QQ_pSignal" + (idir!="" ? "_"+idir : "") + (tmass!="" ? "_"+tmass : "") + ".root").data());
+
+  // Filling CSV file of number of signal and bakcground, and significance by method
+  cnfile << endl;
+  for (int j; j<4; j++) {
+    if (j==0) cnfile << ",";
+    if (j==1) cnfile << "Signal,";
+    if (j==2) cnfile << "Background,";
+    if (j==3) cnfile << "Significance,";
+    for (auto mass : masses) {
+      if (mass == 0) continue;
+      if (j==0) cnfile << "CB,NN_ocv" << (mMulti==false ? ",NN_tcv" : "");
+      if (j==1) { cnfile << sig_CB[mass] << "," << sig_NN_ocv[mass];
+        if (mMulti==false) cnfile << "," << sig_NN_cv[mass];
+        if (mass!=masses[ms-1]) cnfile << ",";
+      }
+      if (j==2) { cnfile << bkg_CB[mass] << "," << bkg_NN_ocv[mass];
+        if (mMulti==false) cnfile << "," << bkg_NN_cv[mass];
+        if (mass!=masses[ms-1]) cnfile << ",";
+      }
+      if (j==3) { cnfile << ams_CB[mass] << "," << ams_NN_ocv[mass];
+        if (mMulti==false) cnfile << "," << ams_NN_cv[mass];
+        if (mass!=masses[ms-1]) cnfile << ",";
+      }
     }
     cnfile << endl;
   }

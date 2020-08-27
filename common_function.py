@@ -72,8 +72,9 @@ def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=T
 
     if (Label>-1): X['LabelMass']=Label
     else:
-        if model=='GM':            prob=np.load('probGM.npy')
-        elif model=='HVT':         prob=np.load('probHVT.npy')
+        if   model=='GM' : prob=np.load('probGM.npy')
+        elif model=='HVT': prob=np.load('probHVT.npy')
+        elif model=='QQ' : prob=np.load('probQQ.npy')
 
         label=np.random.choice(prob.shape[0],X.shape[0], p=prob)
         #X['LabelMass'] = label
@@ -137,7 +138,7 @@ class dataset:
         X_valid = validation[variables]
 
         #Save mean and std dev separately for both models
-        if not(model=='GM' or model=='HVT'): raise NameError('Model needs to be either GM or HVT')
+        if not(model=='GM' or model=='HVT' or model=='QQ'): raise NameError('Model needs to be either GM, HVT or QQ')
         #np.save('./mean'+model, np.mean(X_train))
         #np.save('./std_dev'+model, np.std(X_train))
         transform.append(np.mean(X_train))
@@ -180,8 +181,11 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
 
     #Names of bck samples
     namesbkg = input_samples.bckgr["name"]
-    xsbkg = input_samples.bckgr["xs"]
-    neventsbkg = input_samples.bckgr["nevents"]
+    #Names of qq samples
+    if model=="QQ":
+        namesbkg = np.array(namesbkg)[arg_switches].tolist()
+    #xsbkg = input_samples.bckgr["xs"]
+    #neventsbkg = input_samples.bckgr["nevents"]
     #Read files one by one and normalize weights to 150 fb^-1
     bg = None
     print('\nRead Background Samples')
@@ -226,8 +230,11 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
             neventssig .append( input_samples.sigHVT["nevents"][i] )
             pass
         #print(namessig,len(namessig))
+    elif model=='QQ':
+        namessig = (np.array(input_samples.sigHVT['name'])[arg_switches]).tolist()
+        switches = arg_switches
     else :
-        raise NameError('Model needs to be either GM or HVT')
+        raise NameError('Model needs to be either GM, HVT, or QQ')
 
     sig = None
     prob = np.empty(len(namessig))
@@ -252,8 +259,9 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     bg['LabelMass'] = label
 
     #Save prob distribution
-    if model=='GM':        np.save('./probGM', prob)
-    elif model=='HVT':     np.save('./probHVT', prob)
+    if   model=='GM' : np.save('./probGM',  prob)
+    elif model=='HVT': np.save('./probHVT', prob)
+    elif model=='QQ' : np.save('./probQQ',  prob)
 
     #KM: now add sig+bkg to get entire 'data' sample
     data=bg.append(sig)#, sort=True)

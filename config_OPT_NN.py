@@ -2,6 +2,61 @@ import numpy as np
 
 Filedir    = 'Inputs/MVA' #to change input dataset, change the link in the Inputs directory
 
+class input_samples_qq:
+    #Assumed luminosity
+    lumi = 140.
+    #Fraction used for training 
+    trafrac = 0.9
+    #Directory where ntuples are located
+    filedir = Filedir+"/"+"main"
+    filedirsig = filedir
+    #qq-fusion Samples
+    bckgr = {
+        'name' : ['MVA.302266_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0500_ntuples.root',
+                  'MVA.302267_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0600_ntuples.root',
+                  'MVA.302268_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0700_ntuples.root',
+                  'MVA.302269_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0800_ntuples.root',
+                  'MVA.302270_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m0900_ntuples.root',
+                  'MVA.302271_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1000_ntuples.root',
+                  'MVA.302272_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1100_ntuples.root',
+                  'MVA.302273_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1200_ntuples.root',
+                  'MVA.302274_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1300_ntuples.root',
+                  'MVA.302275_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1400_ntuples.root',
+                  'MVA.302276_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1500_ntuples.root',
+                  'MVA.302277_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1600_ntuples.root',
+                  'MVA.302278_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1700_ntuples.root',
+                  'MVA.302279_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1800_ntuples.root',
+                  'MVA.302280_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m1900_ntuples.root',
+                  'MVA.302281_MadGraphPythia8EvtGen_A14NNPDF23LO_HVT_Agv1_VcWZ_lvll_m2000_ntuples.root']}
+    #HVT samples
+    sigHVT = {
+        'name' : ['MVA.307733_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0500_ntuples.root',
+                  'MVA.307734_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0600_ntuples.root',
+                  'MVA.307735_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0700_ntuples.root',
+                  'MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root',
+                  'MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1100_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1200_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1300_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1400_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1500_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1600_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1700_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1800_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1900_ntuples.root',
+                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m2000_ntuples.root']}
+
+    #Variables used for training
+    variables = ['M_jj','Deta_jj', 'Dphi_jj',
+                 'Jet1Pt', 'Jet2Pt',
+                 'Jet1Eta','Jet2Eta',
+                 'Jet1E','Jet2E','Jet3Eta',
+                 'Lep1Eta','Lep2Eta', 'Lep3Eta', 
+                 'PtBalanceZ','PtBalanceW',
+                 'Eta_W', 'Eta_Z',
+                 'ZetaLep','Njets']
+
 class input_samples:
     #Assumed luminosity
     lumi = 140.
@@ -101,8 +156,11 @@ class apply_samples:
 
     shortList= [450765,450766,450767,450768,450769,450770,450771,450772,450773,450774, #GM  sig
                 305032,305035,#305028,305029,305030,305031,305032,305033,305034,305035, #GM old, only include 600 & 900
-                307730,307731,307732,307733,307734,307735,307736,307737,307738,               #HVT sig
-                361292,364284]                                                                #WZ bkg
+                307730,307731,307732,307733,307734,307735,307736,307737,307738,307739,        #HVT sig
+                307740,307741,307742,307743,307745,307746,307747,307748,
+                361292,364284,                                                                #WZ bkg
+                302266,302267,302268,302269,302270,302271,302272,302273,302274,302275,
+                302276,302277,302278,302279,302280,302281]                                    #QQ sig
     #shortList=list() #uncomment when applying to all samples
     
     for r,d,f in os.walk(filedirapp):

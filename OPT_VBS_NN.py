@@ -58,7 +58,7 @@ Optional arguments
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'NN optimisation')
     parser.add_argument("--v", "--verbose", help="increase output verbosity", default=0, type=int)
-    parser.add_argument("--model", help="Specify Model (HVT or GM)", default='GM', type=str)
+    parser.add_argument("--model", help="Specify Model (HVT or GM or QQ)", default='GM', type=str)
     parser.add_argument("--output", help="Specify Output name", default='', type=str)
     parser.add_argument('--numlayer', help = "Specifies the number of layers of the Neural Network", default=3, type=int)
     parser.add_argument('--numn', help = "Specifies the number of neurons per hidden layer", default=200, type=int)
@@ -88,12 +88,14 @@ if __name__ == '__main__':
 
     #Load input_sample class from config file
     input_sample=conf.input_samples
+    if args.model=="QQ" : input_sample = conf.input_samples_qq
 
     #Additional name from model and hyper parameters
     nameadd=args.output+args.model
 
     mass_list = [200,250,300,350,400,450,500,600,700,800,900]
     if args.model=="HVT": mass_list = [250,300,350,400,450,500,600,700,800,900,1000]
+    if args.model=="QQ":  mass_list = [m for m in range(500,2001,100)]
 
     if args.model=="HVT" and 200 in args.mass_points:
         print ("WARNING: you specified 200 GeV mass point for HVT which does not exist, 200 GeV will be removed!!")
