@@ -4,44 +4,46 @@
 This training framework is made for A WZ->lvll VBS resonance selection using neural networks/BDT.
 
 ## Running the training
-The example below trains a model for a single mass point at 200 GeV and saves the control plots in a subdirectory ControlPlots/m200
+The example below trains a model for a single mass point at 200 GeV and saves the control plots and output in subdirectories GM_0829/m200 in ControlPlots and OutputModel
 ```
-python3 OPT_VBS_NN.py --mass_points 200 --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex 0 --nFold 4 --sdir m200
+python3 OPT_VBS_NN.py --mass_points 200 --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex 0 --nFold 4 --sdir GM_0829/m200
 ```
 
-This next example trains 4 folds for mass points 250 to 800 individually, saving each plots and models seperately
+This next example trains 4 folds for mass points 250 to 500 individually, saving each plots and models seperately
 ```
-for mass in 250 300 400 500 800;
+for mass in 250 300 400 500;
 do for n in 0 1 2 3;
-    do python3 OPT_VBS_NN.py --mass_points $mass --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir GM_0728/m$mass;
+    do python3 OPT_VBS_NN.py --mass_points $mass --model GM --dropout=0.20 --lr=0.013 --patience=18 --numn=10 --numlayer=3 --epochs=100 --Findex $n --nFold 4 --sdir GM_0829/m$mass;
         done;
     done
 ```
 
+You can train for GM, HVT and QQ as models. Make sure to update the sdir argument as well.
+
 ## Applying the model
 The example below applies the model and creates new .root ntuples for one fold trained at 200 GeV, saving the results in a subdirectory of OutputRoot 
 ```
-python3 Apply_NN.py --input sigvalid_GM_m[200]_S13.738_CVp0.312000_F0o4_NN.h5 --sdir 0630/m200
+python3 Apply_NN.py --input sigvalid_GM_m[200]_S13.738_CVp0.312000_F0o4_NN.h5 --sdir GM_0829/m200
 ```
 
 To apply 4 folds, simply add the file names to the input.
 
 This next example applies each model and folds, and creates new ntuples for some masses individually, assuming 4 folds have been trained already. 
 ```
-for mass in 250 300 400 500 800;
+for mass in 250 300 400 500;
 do  input="";
-    for path in OutputModel/GM_0728/m$mass/*4_NN.h5;
-    do  model=GM_0728/m$mass/${path##*/};
+    for path in OutputModel/GM_0829/m$mass/*4_NN.h5;
+    do  model=GM_0829/m$mass/${path##*/};
         input+=$model",";
         done;
-    python3 Apply_NN.py --input ${input%?} --sdir GM_0728/m$mass;
+    python3 Apply_NN.py --input ${input%?} --sdir GM_0829/m$mass;
     done
 ```
 
 ## Plotting some results
-Using the example below, figures are created showing the result of the training for the signal, and the EW and QCD background, as well as the integrals of these curves depending on the cut value. One must first edit the location of the files within the code itself and check that the main for-loop runs over existing mass files. 
-```
-root -l pSignal_cv_plotting.C
+Using the example below, figures are created showing the result of the training for the signal, and the EW and QCD background, as well as the integrals of these curves depending on the cut value. GM and HVT plot for masses 250 to 900, while QQ plot for masses 500 to 2000. 
+``'
+root -l pSignal_cv_plotting.py GM_0829 m250
 ```
 
 ## How to download & initial setup
