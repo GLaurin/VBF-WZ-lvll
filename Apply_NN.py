@@ -218,11 +218,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(args)
 
-    model_files,tr_files=parse_model_files(args.sdir+"/"+args.input)
+    model_files,tr_files = parse_model_files(args.input)
 
     #Load input_sample class from config file
-    input_sample=conf.input_samples
-    apply_sample=conf.apply_samples
+    input_sample = conf.input_samples
+    apply_sample = conf.apply_samples
 
     #Restores Model and compiles automatically
     models = read_models(model_files)

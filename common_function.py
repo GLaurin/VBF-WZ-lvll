@@ -37,7 +37,7 @@ def AMS(s, b):
     return significance
 
 def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=True,debug=False):
-    data = read_data(filepath,isApplication=True)
+    data = read_data(filepath,isApplication=True,phys_model=model)
 
     nFold=len(tr_files)
 
@@ -85,14 +85,15 @@ def read_data_apply(filepath, tr_files, Label, variables,model,apply_transform=T
     return data, X
 
 
-def read_data(filename,mass_window=False, mass=0,isSignal=False,isApplication=False):
+def read_data(filename,mass_window=False, mass=0,isSignal=False,isApplication=False, phys_model='GM'):
     root = ROOT.TFile(filename)
     tree = root.Get('nominal')
     cuts=''
     if not(isApplication):
-        cuts='Jet1Pt>0&&Jet2Pt>0&&M_jj>100.'
-        if isSignal: cuts+='&&abs(Weight)<10'
-        if mass_window: cuts += f" && M_WZ>({mass}*0.6) && M_WZ<({mass}*1.4)"
+        cuts = '1'
+        if phys_model!="QQ": cuts += ' && Jet1Pt>0 && Jet2Pt>0 && M_jj>100.'
+        if isSignal:         cuts += ' && abs(Weight)<10'
+        if mass_window:      cuts += f" && M_WZ>({mass}*0.6) && M_WZ<({mass}*1.4)"
         pass
     #else: no cut when applying
 
@@ -190,7 +191,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     bg = None
     print('\nRead Background Samples')
     for i in range(len(namesbkg)):
-        sample = read_data(input_samples.filedir+namesbkg[i], mass_window=mass_window, mass=mass, isSignal=False)
+        sample = read_data(input_samples.filedir+namesbkg[i], mass_window=mass_window, mass=mass, isSignal=False, phys_model=model)
         print(namesbkg[i])
         #sample['Weight']=sample['Weight']*input_samples.lumi*xsbkg[i]/neventsbkg[i] #KM: This is done in WeightNormalized
         if bg is None:
@@ -240,7 +241,7 @@ def prepare_data(input_samples,model,Findex,nFold,arg_switches=list(),mass_windo
     prob = np.empty(len(namessig))
     print('\nRead Signal Samples')
     for i in range(len(namessig)):
-        sample = read_data(input_samples.filedirsig+namessig[i],mass_window=mass_window, mass=mass,isSignal=True)
+        sample = read_data(input_samples.filedirsig+namessig[i],mass_window=mass_window, mass=mass,isSignal=True, phys_model=model)
         #sample['Weight']=sample['Weight']*input_samples.lumi*xssig[i]/neventssig[i]  #KM: This is done in WeightNormalized
         sample['LabelMass'] = get_mass_label(sample['M_WZ']) #sample['LabelMass'] = i
         print(namessig[i],"\tLabelMass=",i)

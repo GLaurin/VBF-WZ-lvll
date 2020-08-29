@@ -36,16 +36,16 @@ class input_samples_qq:
                   'MVA.307736_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0800_ntuples.root',
                   'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m0900_ntuples.root',
                   'MVA.307738_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1000_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1100_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1200_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1300_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1400_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1500_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1600_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1700_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1800_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1900_ntuples.root',
-                  'MVA.307737_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m2000_ntuples.root']}
+                  'MVA.307739_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1100_ntuples.root',
+                  'MVA.307740_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1200_ntuples.root',
+                  'MVA.307741_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1300_ntuples.root',
+                  'MVA.307742_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1400_ntuples.root',
+                  'MVA.307743_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1500_ntuples.root',
+                  'MVA.307744_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1600_ntuples.root',
+                  'MVA.307745_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1700_ntuples.root',
+                  'MVA.307746_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1800_ntuples.root',
+                  'MVA.307747_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m1900_ntuples.root',
+                  'MVA.307748_MGPy8EG_A14NNPDF23LO_vbfHVT_Agv1_VzWZ_lvll_m2000_ntuples.root']}
 
     #Variables used for training
     variables = ['M_jj','Deta_jj', 'Dphi_jj',
@@ -147,9 +147,9 @@ class apply_samples:
     filedirsig = filedirapp #+ 'new/signalsNew/mc16a/'
 
     # Signal files
-    list_apply_sigGM = input_samples.sigGM['name']
-
+    list_apply_sigGM  = input_samples.sigGM['name']
     list_apply_sigHVT = input_samples.sigHVT['name']
+    list_apply_qqHVT  = input_samples_qq.sigHVT['name']
     
     # parse all files in the directory, except signals
     list_apply_bkg = []
@@ -159,8 +159,8 @@ class apply_samples:
                 307730,307731,307732,307733,307734,307735,307736,307737,307738,307739,        #HVT sig
                 307740,307741,307742,307743,307745,307746,307747,307748,
                 361292,364284,                                                                #WZ bkg
-                302266,302267,302268,302269,302270,302271,302272,302273,302274,302275,
-                302276,302277,302278,302279,302280,302281]                                    #QQ sig
+                302266,302267,302268,302269,302270,302271,302272,302273,302274,302275,        #QQ 
+                302276,302278,302279,302280,302281]
     #shortList=list() #uncomment when applying to all samples
     
     for r,d,f in os.walk(filedirapp):
@@ -170,7 +170,7 @@ class apply_samples:
 
             skipFlag=True
             for ch in shortList:
-                if "{}".format(ch) in file: 
+                if f"{ch}" in file: 
                     skipFlag=False
                     break
                 pass
@@ -202,5 +202,6 @@ class apply_samples:
     #         pass
     #     pass
 
-    labelGM = np.arange(len(list_apply_sigGM))
+    labelGM  = np.arange(len(list_apply_sigGM))
     labelHVT = np.arange(len(list_apply_sigHVT))
+    labelQQ  = np.arange(len(list_apply_qqHVT))
